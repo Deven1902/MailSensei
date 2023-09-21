@@ -180,14 +180,66 @@
 #         st.error("Something went wrong while fetching emails.")
 #         st.image("https://media.makeameme.org/created/something-went-wrong-45810703c6.jpg", use_column_width=True)
 
-import streamlit as st
-import requests
-from LLM import Summarizer
+# -------------------------------------------------------------------
 
+
+# import streamlit as st
+# import requests
+
+# # Streamlit app
+# st.title("Email Viewer")
+
+# # Input fields for email credentials
+# from_email = st.text_input("Email Address")
+# from_password = st.text_input("Password", type="password")
 
 # # Define the FastAPI API URLs
 # SET_CREDENTIALS_URL = "http://localhost:8000/set-credentials"  # Endpoint to set credentials
 # FETCH_EMAILS_URL = "http://localhost:8000/"  # Endpoint to fetch emails
+
+# if st.button("Set Credentials"):
+#     if not from_email or not from_password:
+#         st.error("Please provide both email address and password.")
+#     else:
+#         # Set email credentials using the FastAPI endpoint
+#         try:
+#             response = requests.post(SET_CREDENTIALS_URL, json={"username": from_email, "password": from_password})
+            
+#             if response.status_code == 200:
+#                 st.success(f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
+#             else:
+#                 st.error("Failed to set credentials")
+#         except Exception as e:
+#             st.error("An error occurred while setting credentials.")
+
+# if st.button("Fetch Emails"):
+#     # Fetch email data from the FastAPI API
+#     try:
+#         response = requests.get(FETCH_EMAILS_URL)
+#         if response.status_code == 200:
+#             data = response.json().get("emails", [])
+    
+#             for email in data:
+#                 # Create an expander section for each email
+#                 with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{email['tag']}"):
+                
+#                     # Display the summary of the email (not 'content')
+#                     st.write("Summary:")
+#                     st.write(email['summary'])
+#         else:
+#             st.error("Failed to fetch emails. Status code: " + str(response.status_code))
+#     except Exception as e:
+#         st.error("An error occurred while fetching emails: " + str(e))
+
+
+# -------------------------------------------------------------------
+
+# This code is upadted to fetch emails and render them correctky 
+# This is condeirng that emails returned are of follwoing structure 
+# emails:[{"subject":"abc","summary":"xyz","from":"abc@xyz","tag":"['tag1','tag2']"},{},{},....]
+
+import streamlit as st
+import requests
 
 # Streamlit app
 st.title("Email Viewer")
@@ -196,48 +248,44 @@ st.title("Email Viewer")
 from_email = st.text_input("Email Address")
 from_password = st.text_input("Password", type="password")
 
+# Define the FastAPI API URLs
+SET_CREDENTIALS_URL = "http://localhost:8000/set-credentials"  # Endpoint to set credentials
+FETCH_EMAILS_URL = "http://localhost:8000/"  # Endpoint to fetch emails
+
 if st.button("Set Credentials"):
     if not from_email or not from_password:
         st.error("Please provide both email address and password.")
     else:
         # Set email credentials using the FastAPI endpoint
         try:
-            # response = requests.post(SET_CREDENTIALS_URL, json={"username": from_email, "password": from_password})
-            
-            st.success(f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
+            response = requests.post(SET_CREDENTIALS_URL, json={"username": from_email, "password": from_password})
             
             if response.status_code == 200:
-                st.success("Credentials set successfully")
+                st.success(f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
             else:
                 st.error("Failed to set credentials")
         except Exception as e:
-            # Display error message button
-            error_button = st.button("Oops! Something Went Wrong")
-            if error_button:
-                st.image("https://media.makeameme.org/created/something-went-wrong-45810703c6.jpg", use_container_width=True)
+            st.error("An error occurred while setting credentials.")
 
 if st.button("Fetch Emails"):
     # Fetch email data from the FastAPI API
     try:
         response = requests.get(FETCH_EMAILS_URL)
-        data = response.json().get("emails", [])
+        if response.status_code == 200:
+            data = response.json().get("emails", [])
+    
+            for email in data:
+                # Create an expander section for each email
+                tag_list = email['tag'].strip("[]").replace("'", "").split(',')
 
-        for email in data:
-            # Create a collapsible section for each email
-            with st.beta_expander(f"From: {email['from']}, Subject: {email['subject']}"):
-                # Display the content of the email
-                st.write("Content:")
-                st.write(email['content'])
-
-                # Add a dropdown to view the summary
-                if st.checkbox("View Summary"):
+# Strip leading and trailing spaces from each tag and join them with a comma and a space
+                tag_string = ", ".join(tag.strip() for tag in tag_list)
+               
+                with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{tag_string}"):
+                    
                     st.write("Summary:")
                     st.write(email['summary'])
-    
+        else:
+            st.error("Failed to fetch emails. Status code: " + str(response.status_code))
     except Exception as e:
-        # Display error message button
-        error_button = st.button("Oops! Something Went Wrong")
-        if error_button:
-            st.image("https://media.makeameme.org/created/something-went-wrong-45810703c6.jpg", use_container_width=True)
-
-
+        st.error("An error occurred while fetching emails: " + str(e))
