@@ -783,40 +783,8 @@ from datetime import datetime
 import json
 from typing import List
 
-import os
-os.environ['OPENAI_API_KEY'] = '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'
-
-from langchain.prompts import PromptTemplate
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
 
 app = FastAPI()
-
-# Gmail configuration
-ORG_EMAIL = "@gmail.com"
-FROM_EMAIL = "sureshkulkarni274" + ORG_EMAIL
-# FROM_EMAIL =''
-FROM_PWD = "ffqxnlnalfgugona"
-# FROM_PWD=''
-SMTP_SERVER = "imap.gmail.com"
-SMTP_PORT = 993
-email_tags = [
-    "Funding",
-    "Product Development",
-    "Client Communication",
-    "Sales and Revenue",
-    "Tech Support",
-    "Marketing",
-    "Hiring",
-    "Legal and Compliance",
-    "Strategic Planning",
-    "Spam"
-]
-
-StoreMsgIds = []
-
-# StoreReplyThread = []
 
 def tag_generator(email):
     llm=OpenAI(model_name='gpt-3.5-turbo',temperature=1,max_tokens=256)
@@ -1105,4 +1073,4 @@ async def set_credentials(credentials: dict):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="172.28.64.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=3000)

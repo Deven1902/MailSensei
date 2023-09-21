@@ -182,10 +182,12 @@
 
 import streamlit as st
 import requests
+from LLM import Summarizer
 
-# Define the FastAPI API URLs
-SET_CREDENTIALS_URL = "http://localhost:8000/set-credentials"  # Endpoint to set credentials
-FETCH_EMAILS_URL = "http://localhost:8000/"  # Endpoint to fetch emails
+
+# # Define the FastAPI API URLs
+# SET_CREDENTIALS_URL = "http://localhost:8000/set-credentials"  # Endpoint to set credentials
+# FETCH_EMAILS_URL = "http://localhost:8000/"  # Endpoint to fetch emails
 
 # Streamlit app
 st.title("Email Viewer")
@@ -237,3 +239,5 @@ if st.button("Fetch Emails"):
         error_button = st.button("Oops! Something Went Wrong")
         if error_button:
             st.image("https://media.makeameme.org/created/something-went-wrong-45810703c6.jpg", use_container_width=True)
+
+
