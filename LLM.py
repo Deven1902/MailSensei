@@ -1,18 +1,29 @@
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 import logging
 import timeit
 import json
 import os
+import torch
 os.environ['TRANSFORMERS_CACHE'] = os.curdir + '/cache'
-
-from transformers import pipeline
 
 
 class Summarizer():
     def __init__(self):
-        self._summarizer = pipeline("text-generation", model="TheBloke/Llama-2-7b-Chat-GPTQ")
+        model = AutoModelForCausalLM.from_pretrained("TheBloke/Llama-2-7b-Chat-GPTQ",
+                                                     torch_dtype=torch.float16,
+                                                     device_map="auto",
+                                                     revision="main")
 
-        
-    
+        tokenizer = AutoTokenizer.from_pretrained(
+            "TheBloke/Llama-2-7b-Chat-GPTQ", use_fast=True)
+
+        self._summarizer = pipe = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=1024
+        )
+
     def summarize(self, prompt):
         start = timeit.default_timer()
         txt = f'''[INST] <<SYS>>
@@ -25,7 +36,6 @@ class Summarizer():
         summary = json.loads(txt[txt.index("{"):])
         stop = timeit.default_timer()
         return summary
-    
 
 
 if __name__ == "__main__":
