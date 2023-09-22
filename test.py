@@ -44,5 +44,8 @@ summarized = summarizer(to_tokenize, min_length=75, max_length=300)
 detect = detector(to_tokenize)
 tags = tagger(to_tokenize)
 
+print(detect)
+
 # Print summarized text
-print(f"{summarized = }, \nspam/ham{detect[0]['label']}, \ntags: {tags[0]['generated_text']}")
+print(
+    f"{summarized = }, \nspam/ham: {detect[0]['label']}, \ntags: {tags[0]['generated_text']}")
