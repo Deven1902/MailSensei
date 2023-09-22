@@ -120,7 +120,7 @@
 #             # Display the content of the email
 #             st.write("Content:")
 #             st.write(email['content'])
-            
+
 #             # Add a dropdown to view the summary
 #             if st.checkbox("View Summary"):
 #                 st.write("Summary:")
@@ -204,7 +204,7 @@
 #         # Set email credentials using the FastAPI endpoint
 #         try:
 #             response = requests.post(SET_CREDENTIALS_URL, json={"username": from_email, "password": from_password})
-            
+
 #             if response.status_code == 200:
 #                 st.success(f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
 #             else:
@@ -218,11 +218,11 @@
 #         response = requests.get(FETCH_EMAILS_URL)
 #         if response.status_code == 200:
 #             data = response.json().get("emails", [])
-    
+
 #             for email in data:
 #                 # Create an expander section for each email
 #                 with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{email['tag']}"):
-                
+
 #                     # Display the summary of the email (not 'content')
 #                     st.write("Summary:")
 #                     st.write(email['summary'])
@@ -234,58 +234,103 @@
 
 # -------------------------------------------------------------------
 
-# This code is upadted to fetch emails and render them correctky 
-# This is condeirng that emails returned are of follwoing structure 
+# This code is upadted to fetch emails and render them correctky
+# This is condeirng that emails returned are of follwoing structure
 # emails:[{"subject":"abc","summary":"xyz","from":"abc@xyz","tag":"['tag1','tag2']"},{},{},....]
 
 import streamlit as st
 import requests
+import email_utils
 
-# Streamlit app
-st.title("Email Viewer")
 
-# Input fields for email credentials
-from_email = st.text_input("Email Address")
-from_password = st.text_input("Password", type="password")
+def start():
+    # Streamlit app
+    st.title("Email Viewer")
 
-# Define the FastAPI API URLs
-SET_CREDENTIALS_URL = "http://localhost:8000/set-credentials"  # Endpoint to set credentials
-FETCH_EMAILS_URL = "http://localhost:8000/"  # Endpoint to fetch emails
+    # Input fields for email credentials
+    from_email = st.text_input("Email Address")
+    from_password = st.text_input("Password", type="password")
 
-if st.button("Set Credentials"):
-    if not from_email or not from_password:
-        st.error("Please provide both email address and password.")
-    else:
-        # Set email credentials using the FastAPI endpoint
-        try:
-            response = requests.post(SET_CREDENTIALS_URL, json={"username": from_email, "password": from_password})
-            
-            if response.status_code == 200:
-                st.success(f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
+    if st.button("Set Credentials"):
+        if not from_email or not from_password:
+            st.error("Please provide both email address and password.")
+        else:
+            if email_utils.set_credentials(from_email, from_password):
+                st.success(
+                    f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
             else:
                 st.error("Failed to set credentials")
-        except Exception as e:
-            st.error("An error occurred while setting credentials.")
 
-if st.button("Fetch Emails"):
-    # Fetch email data from the FastAPI API
-    try:
-        response = requests.get(FETCH_EMAILS_URL)
-        if response.status_code == 200:
-            data = response.json().get("emails", [])
-    
-            for email in data:
-                # Create an expander section for each email
-                tag_list = email['tag'].strip("[]").replace("'", "").split(',')
+    if st.button("Fetch Emails"):
+        # Fetch email data from the FastAPI API
+        try:
+            emails = email_utils.fetch_emails_from_imap(
+                from_email, from_password)
+            render_emails(emails)
+        except:
+            pass
 
-# Strip leading and trailing spaces from each tag and join them with a comma and a space
-                tag_string = ", ".join(tag.strip() for tag in tag_list)
-               
-                with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{tag_string}"):
-                    
-                    st.write("Summary:")
-                    st.write(email['summary'])
-        else:
-            st.error("Failed to fetch emails. Status code: " + str(response.status_code))
-    except Exception as e:
-        st.error("An error occurred while fetching emails: " + str(e))
+#         if response.status_code == 200:
+#             data = response.json().get("emails", [])
+
+#             for email in data:
+#                 # Create an expander section for each email
+#                 tag_list = email['tag'].strip("[]").replace("'", "").split(',')
+
+# # Strip leading and trailing spaces from each tag and join them with a comma and a space
+#                 tag_string = ", ".join(tag.strip() for tag in tag_list)
+
+#                 with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{tag_string}"):
+
+#                     st.write("Summary:")
+#                     st.write(email['summary'])
+#         else:
+#             st.error("Failed to fetch emails. Status code: " +
+#                      str(response.status_code))
+#     except Exception as e:
+#         st.error("An error occurred while fetching emails: " + str(e))
+
+
+def render_emails(email_messages, page_number=1, page_size=10):
+    """Renders the email messages in a Streamlit application with pagination.
+
+    Args:
+      email_messages: A list of email messages.
+      page_number: The current page number.
+      page_size: The number of emails to display per page.
+    """
+
+    # Calculate the total number of pages.
+    total_pages = len(email_messages) // page_size
+
+    # Get the email messages for the current page.
+    start_index = (page_number - 1) * page_size
+    end_index = start_index + page_size
+    email_messages_for_page = email_messages[start_index:end_index]
+
+    # Render the email messages for the current page.
+    for email_message in email_messages_for_page:
+        st.markdown(f'**Subject:** {email_message["subject"]}')
+        st.markdown(f'**From:** {email_message["from"]}')
+        st.markdown(f'**Body:** {email_message["content"]}')
+
+    # Add buttons to allow the user to navigate between pages.
+    if page_number > 1:
+        st.button('Previous page', on_click=lambda: render_emails(
+            email_messages, page_number - 1))
+    if page_number < total_pages:
+        st.button('Next page', on_click=lambda: render_emails(
+            email_messages, page_number + 1))
+
+
+if __name__ == '__main__':
+    # Get the Gmail username and password from the user.
+    # username = "ayushdeshpande81@gmail.com"
+
+    # # Fetch the emails from IMAP.
+    # email_messages = email_utils.fetch_emails_from_imap(username, password)
+
+    # # Render the emails.
+    # render_emails(email_messages)
+
+    start()
