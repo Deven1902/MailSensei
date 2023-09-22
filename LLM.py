@@ -1,10 +1,10 @@
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 import logging
 import timeit
 import json
 import os
 import torch
 os.environ['TRANSFORMERS_CACHE'] = os.curdir + '/cache'
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 
 
 class Summarizer():
