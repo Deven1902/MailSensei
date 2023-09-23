@@ -239,82 +239,89 @@
 import streamlit as st
 import requests
 import email_utils
-from LLM import Summarizer
+import LLM
 
-llm = Summarizer()
+if "model" not in st.session_state.keys():
+    st.session_state["model"] = LLM.init()
+model = st.session_state["model"]
+
 
 def start():
-  # Streamlit app
-  st.title("Email Viewer")
+    # Streamlit app
+    st.title("Email Viewer")
 
-  # Input fields for email credentials
-  from_email = st.text_input("Email Address")
-  from_password = st.text_input("Password", type="password")
+    # Input fields for email credentials
+    from_email = st.text_input("Email Address")
+    from_password = st.text_input("Password", type="password")
 
-  if st.button("Set Credentials"):
-    if not from_email or not from_password:
-      st.error("Please provide both email address and password.")
-    else:
-      if email_utils.set_credentials(from_email, from_password):
-        st.success(
-            f"Credentials set successfully. Email: {from_email}, Password: {from_password}"
-        )
-        email_ids = email_utils.fetch_emails_from_imap(from_email,
-                                                       from_password)
-        st.session_state.update(email_ids=email_ids)
+    if st.button("Set Credentials"):
+        if not from_email or not from_password:
+            st.error("Please provide both email address and password.")
+        else:
+            if email_utils.set_credentials(from_email, from_password):
+                st.success(
+                    f"Credentials set successfully. Email: {from_email}, Password: {from_password}"
+                )
+                email_ids = email_utils.fetch_emails_from_imap(from_email,
+                                                               from_password)
+                st.session_state.update(email_ids=email_ids)
 
-      else:
-        st.error("Failed to set credentials")
+            else:
+                st.error("Failed to set credentials")
 
-  if st.button("Fetch Emails"):
-    # Fetch email data from the FastAPI API
-    try:
-      with st.spinner('Loading...'):
-        render_emails(from_email, from_password)
-    except Exception as e:
-      print(e)
+    if st.button("Fetch Emails"):
+        # Fetch email data from the FastAPI API
+        try:
+            with st.spinner('Loading...'):
+                render_emails(from_email, from_password)
+        except Exception as e:
+            print(e)
 
 
 def render_emails(from_email, from_password, page_size=10):
-  """Renders the email messages in a Streamlit application with pagination.
+    """Renders the email messages in a Streamlit application with pagination.
 
-    Args:
-      email_messages: A list of email messages.
-      page_number: The current page number.
-      page_size: The number of emails to display per page.
-    """
+      Args:
+        email_messages: A list of email messages.
+        page_number: The current page number.
+        page_size: The number of emails to display per page.
+      """
 
-  page_number = st.session_state.get("page", 1)
-  email_ids = st.session_state.email_ids
-  start_index = (page_number - 1) * page_size
-  end_index = start_index + page_size
+    page_number = st.session_state.get("page", 1)
+    email_ids = st.session_state.email_ids
+    start_index = (page_number - 1) * page_size
+    end_index = start_index + page_size
 
-  print(
-      f"{page_number = } \n {start_index = } \n {end_index = } \n {email_ids[0:20]} = "
-  )
+    print(
+        f"{page_number = } \n {start_index = } \n {end_index = } \n {email_ids[0:20]} = "
+    )
 
-  email_messages = email_utils.decode_emails(email_ids, start_index, end_index,
-                                             from_email, from_password)
+    email_messages = email_utils.decode_emails(email_ids, start_index, end_index,
+                                               from_email, from_password)
 
-  # Render the email messages for the current page.
-  for email_message in email_messages:
-    tags = llm.get_tags(email_message["content"])
-    with st.expander(  f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\ntags:{tags}"
-    ):
-      
-      st.markdown(f'**Body:** {email_message["content"]}')
-      st.markdown(f"")
+    # Render the email messages for the current page.
+    for email_message in email_messages:
+        if "model" not in st.session_state.keys():
+            st.session_state["model"] = LLM.init()
+        model = st.session_state["model"]
+        tags = LLM.get_tags(email_message["content"], model[1])
+        spam = LLM.detect_spam(email_message["content"], model[0])
+        with st.expander(f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n{'***spam***' if spam == 'spam' else ''}"
+                         ):
 
-  total = len(st.session_state.email_ids)
-  
-  # Add buttons to allow the user to navigate between pages.
-  if page_number > 1:
-    st.button('Previous page',
-              on_click=lambda: (st.session_state.update(page=page_number - 1),render_emails(from_email,from_password)))
-  if page_number < total:
-    st.button('Next page',
-              on_click=lambda: (st.session_state.update(page=page_number + 1),render_emails(from_email,from_password)))
+            st.markdown(f'**Body:** {email_message["content"]}')
+            st.markdown(f"")
+
+    total = len(st.session_state.email_ids)
+
+    # Add buttons to allow the user to navigate between pages.
+    if page_number > 1:
+        st.button('Previous page',
+                  on_click=lambda: (st.session_state.update(page=page_number - 1), render_emails(from_email, from_password)))
+    if page_number < total:
+        st.button('Next page',
+                  on_click=lambda: (st.session_state.update(page=page_number + 1), render_emails(from_email, from_password)))
 
 
 if __name__ == "__main__":
-  start()
+    start()
