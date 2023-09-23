@@ -182,7 +182,6 @@
 
 # -------------------------------------------------------------------
 
-
 # import streamlit as st
 # import requests
 
@@ -231,7 +230,6 @@
 #     except Exception as e:
 #         st.error("An error occurred while fetching emails: " + str(e))
 
-
 # -------------------------------------------------------------------
 
 # This code is upadted to fetch emails and render them correctky
@@ -241,58 +239,44 @@
 import streamlit as st
 import requests
 import email_utils
+from LLM import Summarizer
 
+llm = Summarizer()
 
 def start():
-    # Streamlit app
-    st.title("Email Viewer")
+  # Streamlit app
+  st.title("Email Viewer")
 
-    # Input fields for email credentials
-    from_email = st.text_input("Email Address")
-    from_password = st.text_input("Password", type="password")
+  # Input fields for email credentials
+  from_email = st.text_input("Email Address")
+  from_password = st.text_input("Password", type="password")
 
-    if st.button("Set Credentials"):
-        if not from_email or not from_password:
-            st.error("Please provide both email address and password.")
-        else:
-            if email_utils.set_credentials(from_email, from_password):
-                st.success(
-                    f"Credentials set successfully. Email: {from_email}, Password: {from_password}")
-            else:
-                st.error("Failed to set credentials")
+  if st.button("Set Credentials"):
+    if not from_email or not from_password:
+      st.error("Please provide both email address and password.")
+    else:
+      if email_utils.set_credentials(from_email, from_password):
+        st.success(
+            f"Credentials set successfully. Email: {from_email}, Password: {from_password}"
+        )
+        email_ids = email_utils.fetch_emails_from_imap(from_email,
+                                                       from_password)
+        st.session_state.update(email_ids=email_ids)
 
-    if st.button("Fetch Emails"):
-        # Fetch email data from the FastAPI API
-        try:
-            emails = email_utils.fetch_emails_from_imap(
-                from_email, from_password)
-            render_emails(emails)
-        except:
-            pass
+      else:
+        st.error("Failed to set credentials")
 
-#         if response.status_code == 200:
-#             data = response.json().get("emails", [])
-
-#             for email in data:
-#                 # Create an expander section for each email
-#                 tag_list = email['tag'].strip("[]").replace("'", "").split(',')
-
-# # Strip leading and trailing spaces from each tag and join them with a comma and a space
-#                 tag_string = ", ".join(tag.strip() for tag in tag_list)
-
-#                 with st.expander(f"**From**:\n{email['from']}\n\n**Subject**:\n{email['subject']}\n\n**Tags**:\n{tag_string}"):
-
-#                     st.write("Summary:")
-#                     st.write(email['summary'])
-#         else:
-#             st.error("Failed to fetch emails. Status code: " +
-#                      str(response.status_code))
-#     except Exception as e:
-#         st.error("An error occurred while fetching emails: " + str(e))
+  if st.button("Fetch Emails"):
+    # Fetch email data from the FastAPI API
+    try:
+      with st.spinner('Loading...'):
+        render_emails(from_email, from_password)
+    except Exception as e:
+      print(e)
 
 
-def render_emails(email_messages, page_number=1, page_size=10):
-    """Renders the email messages in a Streamlit application with pagination.
+def render_emails(from_email, from_password, page_size=10):
+  """Renders the email messages in a Streamlit application with pagination.
 
     Args:
       email_messages: A list of email messages.
@@ -300,37 +284,37 @@ def render_emails(email_messages, page_number=1, page_size=10):
       page_size: The number of emails to display per page.
     """
 
-    # Calculate the total number of pages.
-    total_pages = len(email_messages) // page_size
+  page_number = st.session_state.get("page", 1)
+  email_ids = st.session_state.email_ids
+  start_index = (page_number - 1) * page_size
+  end_index = start_index + page_size
 
-    # Get the email messages for the current page.
-    start_index = (page_number - 1) * page_size
-    end_index = start_index + page_size
-    email_messages_for_page = email_messages[start_index:end_index]
+  print(
+      f"{page_number = } \n {start_index = } \n {end_index = } \n {email_ids[0:20]} = "
+  )
 
-    # Render the email messages for the current page.
-    for email_message in email_messages_for_page:
-        st.markdown(f'**Subject:** {email_message["subject"]}')
-        st.markdown(f'**From:** {email_message["from"]}')
-        st.markdown(f'**Body:** {email_message["content"]}')
+  email_messages = email_utils.decode_emails(email_ids, start_index, end_index,
+                                             from_email, from_password)
 
-    # Add buttons to allow the user to navigate between pages.
-    if page_number > 1:
-        st.button('Previous page', on_click=lambda: render_emails(
-            email_messages, page_number - 1))
-    if page_number < total_pages:
-        st.button('Next page', on_click=lambda: render_emails(
-            email_messages, page_number + 1))
+  # Render the email messages for the current page.
+  for email_message in email_messages:
+    tags = llm.get_tags(email_message["content"])
+    with st.expander(  f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\ntags:{tags}"
+    ):
+      
+      st.markdown(f'**Body:** {email_message["content"]}')
+      st.markdown(f"")
+
+  total = len(st.session_state.email_ids)
+  
+  # Add buttons to allow the user to navigate between pages.
+  if page_number > 1:
+    st.button('Previous page',
+              on_click=lambda: (st.session_state.update(page=page_number - 1),render_emails(from_email,from_password)))
+  if page_number < total:
+    st.button('Next page',
+              on_click=lambda: (st.session_state.update(page=page_number + 1),render_emails(from_email,from_password)))
 
 
-if __name__ == '__main__':
-    # Get the Gmail username and password from the user.
-    # username = "ayushdeshpande81@gmail.com"
-
-    # # Fetch the emails from IMAP.
-    # email_messages = email_utils.fetch_emails_from_imap(username, password)
-
-    # # Render the emails.
-    # render_emails(email_messages)
-
-    start()
+if __name__ == "__main__":
+  start()
