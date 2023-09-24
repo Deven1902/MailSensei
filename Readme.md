@@ -63,7 +63,6 @@ CEOs and business professionals often receive hundreds of emails daily, making e
 
 - **User Preferences:** Fine-tune MailSensei with preferences like summarization length and tag rules for a personalized experience. ⚙️👤
 
-```
-Initially, we used OpenAI keys for all our app functions. However, we later changed our approach as some users may not have premium keys, and we wanted to ensure accessibility without additional costs. 😉😊
-```
+
+*"Initially, we used OpenAI keys for all our app functions. However, we later changed our approach as some users may not have premium keys, and we wanted to ensure accessibility without additional costs. 😉😊"*
 
