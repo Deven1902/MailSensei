@@ -1,3 +1,5 @@
+from html.parser import HTMLParser
+from io import StringIO
 import email
 import imaplib
 
@@ -23,7 +25,7 @@ def set_credentials(username, password):
         return False
 
 
-def fetch_emails_from_imap(username, password, page_number=1, page_size=10):
+def fetch_emails_from_imap(username, password):
     """Fetches emails from IMAP with pagination.
 
       Args:
@@ -108,3 +110,24 @@ def decode_emails(email_ids, start_index, end_index, username, password):
     imap_connection.close()
 
     return email_messages
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.text = StringIO()
+
+    def handle_data(self, d):
+        self.text.write(d)
+
+    def get_data(self):
+        return self.text.getvalue()
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
