@@ -71,6 +71,9 @@ def render_emails(from_email, from_password, page_size=10):
 
   email_messages = email_utils.decode_emails(email_ids, start_index, end_index,
                                              from_email, from_password)
+  
+  spam_text = "***spam***"
+  style = "color: red;"
 
   # Render the email messages for the current page.
   for email_message in email_messages:
@@ -78,12 +81,16 @@ def render_emails(from_email, from_password, page_size=10):
     summary = LLM.summarize(content, model[0])
     tags = LLM.get_tags(content, model[2])
     spam = LLM.detect_spam(content, model[1])
+    
+    st.markdown(f'<p style="{style}">{spam_text}</p>', unsafe_allow_html=True)
     with st.expander(
-f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n{'***spam***' if spam == 'spam' else ''}"
+f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n" #{'***spam***' if spam == 'spam' else ''}"
     ):
+      
       st.markdown(f"**Summary** {summary[0]['summary_text']}")
 
   total = len(st.session_state.email_ids)
+  
 
   # Add buttons to allow the user to navigate between pages.
   if page_number > 1:
