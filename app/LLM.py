@@ -20,9 +20,9 @@ logging.basicConfig(
 def init():
     summarizer = pipeline("summarization",
                           model="sshleifer/distilbart-cnn-12-6",
-                          use_fast=True
-                        )
-    
+                          use_fast=True,
+                          device=0 if torch.cuda.is_available() else -1
+                          )
     detector = pipeline(
         "text-classification",
         model="1aurent/distilbert-base-multilingual-cased-finetuned-email-spam",
