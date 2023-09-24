@@ -1,7 +1,9 @@
 /myenv
-/__pycache__
+__pycache__
 cache
 venv
 .env
 .vscode
 llm.log
+.upm
+.pythonlibs
