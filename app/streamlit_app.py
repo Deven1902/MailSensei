@@ -29,12 +29,16 @@ def start():
   #       st.error("Failed to set credentials") 
 
   # Create a sidebar for input fields
-  st.title("Email Summarizer")
+  # st.title("Email Summarizer")
+  
   
   with st.sidebar:
+    # st.header("Email Summarizer")
+
+    st.markdown("# Email Summarizer")
     st.subheader("Email Credentials")
     from_email = st.text_input("Email Address")
-    from_password = st.text_input("Password", type="password")
+    from_password = st.text_input("App Password", type="password")
     if st.button("Set Credentials"):
       if not from_email or not from_password:
         st.error("Please provide both email address and password.")
@@ -82,12 +86,23 @@ def render_emails(from_email, from_password, page_size=10):
     tags = LLM.get_tags(content, model[2])
     spam = LLM.detect_spam(content, model[1])
     
-    st.markdown(f'<p style="{style}">{spam_text}</p>', unsafe_allow_html=True)
+    # Add a redirect button that links to the original email
+    redirect_url = f'https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{email_message["Message ID"]}'
+    
+    # st.markdown(f'<p style="{style}">{spam_text}</p>', unsafe_allow_html=True)
+
     with st.expander(
-f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n" #{'***spam***' if spam == 'spam' else ''}"
+f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n" #{'***spam***' if spam == 'spam' else ''}",
+
     ):
       
       st.markdown(f"**Summary** {summary[0]['summary_text']}")
+      st.markdown(f"**[Read full e-mail]({redirect_url})**")
+    
+    # Handle the button click event
+    # if redirect_button_clicked:
+    #     st.write(f"Redirecting to Gmail: {redirect_url}")
+    #     st.experimental_rerun()  # Refresh the app to open the link
 
   total = len(st.session_state.email_ids)
   
