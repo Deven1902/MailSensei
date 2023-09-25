@@ -21,6 +21,7 @@ def set_credentials(username, password):
         # Login to the IMAP server.
         imap_connection.login(username, password)
         return True
+    
     except:
         return False
 
@@ -58,8 +59,9 @@ def fetch_emails_from_imap(username, password):
     # Get the email messages for the current page.
     imap_connection.close()
 
-    return email_ids
+    email_ids.reverse()
 
+    return email_ids
 
 def decode_emails(email_ids, start_index, end_index, username, password):
     imap_server = 'imap.gmail.com'
@@ -70,10 +72,13 @@ def decode_emails(email_ids, start_index, end_index, username, password):
     imap_connection.login(username, password)
     imap_connection.select('INBOX')
     email_messages = []
+    
     for email_id in email_ids[start_index:end_index]:
         email_message = imap_connection.fetch(email_id, '(RFC822)')[1][0][1]
-        msg = email.message_from_string(
-            email_message.decode('utf-8', errors='ignore'))
+        msg = email.message_from_bytes(
+            # email_message.decode('utf-8', errors='ignore'))
+            email_message
+        )
         email_subject = msg['subject']
         email_from = msg['from']
         email_content = ""

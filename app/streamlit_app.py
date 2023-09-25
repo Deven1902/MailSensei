@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import email_utils
 import LLM
+import email.header
 
 if "model" not in st.session_state.keys():
   st.session_state["model"] = LLM.init()
@@ -81,6 +82,12 @@ def render_emails(from_email, from_password, page_size=10):
 
   # Render the email messages for the current page.
   for email_message in email_messages:
+    # subject, encoding = email.header.decode_header(email_message['subject'])[0]
+    # if encoding:
+    #   subject = subject.decode(encoding)
+    # else:
+    #   subject = str(subject)
+
     content = email_utils.strip_tags(email_message["content"])
     summary = LLM.summarize(content, model[0])
     tags = LLM.get_tags(content, model[2])
