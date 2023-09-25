@@ -1,7 +1,8 @@
 # 🚀 Introducing MailSensei
 ## Your Cutting-Edge Email Management Companion 📧✂️
 
-<img  src="https://i.ibb.co/Bg6h8qp/your-image.png"  alt="MailSensei Image">
+<!-- <img  src="https://i.ibb.co/Bg6h8qp/your-image.png"  alt="MailSensei Image"> -->
+![Image](./PeerlistHackathon_CoverImg.png)
 
 Tired of sifting through endless emails, only to discover they're not worth your time? Ever missed important messages due to email overload? In today's digital age, our inboxes are overflowing with both vital and distracting content. You might spend precious time on lengthy, irrelevant emails. MailSensei is here to revolutionize your email experience by addressing these challenges. 🚀
 
