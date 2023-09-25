@@ -73,7 +73,7 @@ Here we have attached an article to guide you through setting up an app password
 Requirements:
 - Python 3.7+
 - cuda (optional for GPU support)
-
+- Minimum 4GB RAM is required to run the app
 
 clone the repository:
 ```bash
