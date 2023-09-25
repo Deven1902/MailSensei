@@ -13,13 +13,13 @@ Tired of sifting through endless emails, only to discover they're not worth your
 CEOs and business professionals often receive hundreds of emails daily, making efficient email management essential. MailSensei offers a solution to navigate this email overload, ensuring that crucial messages are never missed and time is spent more productively. 🕒💼
 
 ### How to run the project 🌟
-- Visit the following URL to locate the project:- **[Link Text](https://replit.com/@DevenNandapurka/Peerlist-Hackathon)**
+- Visit the following URL to locate the project:- **[https://replit.com/@DevenNandapurka/Peerlist-Hackathon](https://replit.com/@DevenNandapurka/Peerlist-Hackathon)**
 
-- **You will see the replit workspace. Click the **Run** button. 
+- You will see the replit workspace. Click the `Run` button. 
 
-- Once the project is up and running, enter your credentials in the project and click the **Set Credentials** button. 
+- Once the project is up and running, enter your credentials in the project and click the `Set Credentials` button. 
 
-- Click the **Fetch Emails** button -> and all of your unread emails will be fetched and rendered in a short summary format. 
+- Click the `Fetch Emails` button -> and all of your unread emails will be fetched and rendered in a short summary format. 
 
 ### Our Unique Approach 🌟
 
