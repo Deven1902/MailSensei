@@ -51,7 +51,7 @@ def fetch_emails_from_imap(username, password):
     imap_connection.select('INBOX')
 
     # Search for all unread emails.
-    emails = imap_connection.search(None, 'X-GM-RAW "Category:Primary"')
+    emails = imap_connection.search(None, 'X-GM-RAW "Category:Primary"', "UNSEEN")
     # Get the email IDs.
 
     email_ids = emails[1][0].decode().split(' ')
