@@ -68,6 +68,43 @@ Here we have attached an article to guide you through setting up an app password
    - **Purpose:** Generates tags to categorize and organize emails.
    - **Utilized for:** Email tagging and categorization.
 
+
+### Running locally:
+Requirements:
+- Python 3.7+
+- cuda (optional for GPU support)
+
+
+clone the repository:
+```bash
+git clone https://github.com/Deven1902/Peerlist-Hackathon
+```
+optionally create a virtual environment:
+```bash
+python -m venv venv
+```
+activate the virtual environment:
+
+for Linux
+```bash
+source venv/bin/activate
+```
+
+for Windows
+```bash
+venv\Scripts\activate
+```
+
+install requirements using pip:
+```bash
+pip install -r requirements.txt
+```
+
+run the app:
+```bash
+streamlit run app/streamlit_app.py
+```
+
 ### Future Enhancements 🚀🔮
 
 - **Improved Spam Filtering:** We'll enhance the accuracy of our spam detection algorithm for a cleaner inbox. 🚮
@@ -80,4 +117,6 @@ Here we have attached an article to guide you through setting up an app password
 
 
 *"Initially, we used OpenAI keys for all our app functions. However, we later changed our approach as some users may not have premium keys, and we wanted to ensure accessibility without additional costs. 😉😊"*
+
+
 
