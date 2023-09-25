@@ -17,6 +17,9 @@ CEOs and business professionals often receive hundreds of emails daily, making e
 
 - You will see the replit workspace. Click the `Run` button. 
 
+- You need to setup an **App Password** before you can set credentails for MailSensei. 
+Here we have attached an article to guide you through setting up an app password -> **[Generate your App Password](https://support.google.com/mail/answer/185833?hl=en)**
+
 - Once the project is up and running, enter your credentials in the project and click the `Set Credentials` button. 
 
 - Click the `Fetch Emails` button -> and all of your unread emails will be fetched and rendered in a short summary format. 
