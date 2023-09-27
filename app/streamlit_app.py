@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import email_utils
 import LLM
+import email.header
 
 if "model" not in st.session_state.keys():
   st.session_state["model"] = LLM.init()
@@ -9,32 +10,7 @@ model = st.session_state["model"]
 
 
 def start():
-  # Streamlit app
-  # st.title("Email Summarizer")
-
-  # # Input fields for email credentials
-  # from_email = st.text_input("Email Address")
-  # from_password = st.text_input("Password", type="password")
-
-  # if st.button("Set Credentials"):
-  #   if not from_email or not from_password:
-  #     st.error("Please provide both email address and password.")
-  #   else:
-  #     if email_utils.set_credentials(from_email, from_password):
-  #       st.success(f"Credentials set successfully. Email: {from_email}")
-  #       email_ids = email_utils.fetch_emails_from_imap(from_email, from_password)
-  #       st.session_state.update(email_ids=email_ids)
-
-  #     else:
-  #       st.error("Failed to set credentials") 
-
-  # Create a sidebar for input fields
-  # st.title("Email Summarizer")
-  
-  
   with st.sidebar:
-    # st.header("Email Summarizer")
-
     st.markdown("# Email Summarizer")
     st.subheader("Email Credentials")
     from_email = st.text_input("Email Address")
@@ -81,6 +57,12 @@ def render_emails(from_email, from_password, page_size=10):
 
   # Render the email messages for the current page.
   for email_message in email_messages:
+    # subject, encoding = email.header.decode_header(email_message['subject'])[0]
+    # if encoding:
+    #   subject = subject.decode(encoding)
+    # else:
+    #   subject = str(subject)
+
     content = email_utils.strip_tags(email_message["content"])
     summary = LLM.summarize(content, model[0])
     tags = LLM.get_tags(content, model[2])
