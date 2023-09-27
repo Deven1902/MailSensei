@@ -1,11 +1,11 @@
 modules = ["python-3.10:v18-20230807-322e88b"]
 
 hidden = [".pythonlibs"]
-run = "streamlit run app/streamlit_app.py"
+run = "STREAMLIT_SERVER_HEADLESS=true streamlit run app/streamlit_app.py"
 
 [nix]
 channel = "stable-23_05"
 
 [deployment]
-run = ["sh", "-c", "streamlit run app/streamlit_app.py"]
+run = ["sh", "-c", "STREAMLIT_SERVER_HEADLESS=true streamlit run app/streamlit_app.py"]
 deploymentTarget = "cloudrun"
