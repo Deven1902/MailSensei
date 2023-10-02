@@ -1,8 +1,6 @@
 import streamlit as st
-import requests
 import email_utils
 import LLM
-import email.header
 
 
 if "model" not in st.session_state.keys():
@@ -60,21 +58,12 @@ def render_emails(from_email, from_password, page_size=10):
     email_messages = email_utils.decode_emails(email_ids, start_index, end_index,
                                                from_email, from_password)
 
-    spam_text = "***spam***"
-    style = "color: red;"
-
-    # Render the email messages for the current page.
     for email_message in email_messages:
-        # subject, encoding = email.header.decode_header(email_message['subject'])[0]
-        # if encoding:
-        #   subject = subject.decode(encoding)
-        # else:
-        #   subject = str(subject)
 
         content = email_utils.strip_tags(email_message["content"])
         summary = LLM.summarize(content, model[0])
         tags = LLM.get_tags(content, model[2])
-        spam = LLM.detect_spam(content, model[1])
+        # spam = LLM.detect_spam(content, model[1])
 
         # Add a redirect button that links to the original email
         redirect_url = f'https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{email_message["Message ID"]}'

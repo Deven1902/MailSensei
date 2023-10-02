@@ -76,10 +76,12 @@ def decode_emails(email_ids, start_index, end_index, username, password):
     for email_id in email_ids[start_index:end_index]:
         email_message = imap_connection.fetch(email_id, '(RFC822)')[1][0][1]
         msg = email.message_from_bytes(
-            # email_message.decode('utf-8', errors='ignore'))
             email_message
         )
         email_subject = msg['subject']
+        text, encoding = email.header.decode_header(msg['subject'])[0]
+        if encoding:
+            email_subject = text.decode(encoding)
         email_from = msg['from']
         email_content = ""
 
