@@ -80,7 +80,7 @@ def render_emails(from_email, from_password, page_size=10):
         redirect_url = f'https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{email_message["Message ID"]}'
 
         EMAIL_FROM= email_message['from']
-        EMAIL_SUBJECT = email_message['subject'] if len(email_message['subject']) != 0 else "No Subject"
+        EMAIL_SUBJECT = email_message['subject'] if email_message['subject'].strip() else "No Subject"
         EMAIL_TAGS = tags[0]['generated_text']
         EMAIL_SUMMARY = summary[0]['summary_text']
 
