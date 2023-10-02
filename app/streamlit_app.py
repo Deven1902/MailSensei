@@ -79,13 +79,18 @@ def render_emails(from_email, from_password, page_size=10):
         # Add a redirect button that links to the original email
         redirect_url = f'https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{email_message["Message ID"]}'
 
+        EMAIL_FROM= email_message['from']
+        EMAIL_SUBJECT = email_message['subject'] if len(email_message['subject']) != 0 else "No Subject"
+        EMAIL_TAGS = tags[0]['generated_text']
+        EMAIL_SUMMARY = summary[0]['summary_text']
+
         with st.expander(
 
-            f"**From**:\n{email_message['from']}\n\n**Subject**:\n{email_message['subject']}\n\n**Tags**:\n{tags[0]['generated_text']}\n\n"
+            f"**From**:\n{EMAIL_FROM}\n\n**Subject**:\n{EMAIL_SUBJECT}\n\n**Tags**:\n{EMAIL_TAGS}\n\n"
         ):
             # tag_html = ''.join([f'<span style="display: inline-block; background-color: rgba(230, 230, 230, 0.2); padding: 3px 6px; margin-right: 8px; border-radius: 5px;">{tag}</span>' for tag in tags[0]['generated_text'].split(',')])
 
-            st.markdown(f"**Summary**:\n {summary[0]['summary_text']}")
+            st.markdown(f"**Summary**:\n {EMAIL_SUMMARY}")
             st.markdown(f"**[Read full e-mail]({redirect_url})**")
 
         # Handle the button click event
