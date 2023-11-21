@@ -21,7 +21,8 @@ def set_credentials(username, password):
         # Login to the IMAP server.
         imap_connection.login(username, password)
         return True
-    
+
+
     except:
         return False
 
@@ -63,6 +64,8 @@ def fetch_emails_from_imap(username, password):
 
     return email_ids
 
+
+
 def decode_emails(email_ids, start_index, end_index, username, password):
     imap_server = 'imap.gmail.com'
     imap_port = 993
@@ -72,24 +75,31 @@ def decode_emails(email_ids, start_index, end_index, username, password):
     imap_connection.login(username, password)
     imap_connection.select('INBOX', readonly=True)
     email_messages = []
-    
+
     for email_id in email_ids[start_index:end_index]:
         email_message = imap_connection.fetch(email_id, '(RFC822)')[1][0][1]
         msg = email.message_from_bytes(
             email_message
         )
         email_subject = msg['subject']
-        text, encoding = email.header.decode_header(msg['subject'])[0]
-        if encoding:
-            email_subject = text.decode(encoding)
         email_from = msg['from']
         email_content = ""
+        attachment_file_names = []  
+
 
         if msg.is_multipart():
             for part in msg.walk():
+                if part.get_content_maintype() == 'multipart':
+                    continue
+                if part.get('Content-Disposition') is None:
+                    continue
+                attachment_file_name = part.get_filename()
+
+                if attachment_file_name:
+                    attachment_file_names.append(attachment_file_name)
+
                 if part.get_content_type() == "text/plain":
-                    email_content = part.get_payload(decode=True).decode('utf-8',
-                                                                         errors='ignore')
+                    email_content = part.get_payload(decode=True).decode('utf-8',errors='ignore')
                     break
         else:
             email_content = msg.get_payload(decode=True).decode('utf-8',
@@ -108,6 +118,7 @@ def decode_emails(email_ids, start_index, end_index, username, password):
             'IsReply': bool(in_reply_to),  # Check if it's a reply
             'InReplyTo': in_reply_to,  # Add the ID of the parent message
             'StoreReplyThread': [],
+            'attachment': attachment_file_names,
             # 'summary': llm.summarize(email_content)
         }
 
