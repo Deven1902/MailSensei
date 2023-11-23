@@ -72,6 +72,7 @@ def render_emails(from_email, from_password, page_size=10):
         EMAIL_SUBJECT = email_message['subject'] if email_message['subject'].strip() else "No Subject"
         EMAIL_TAGS = tags[0]['generated_text']
         EMAIL_SUMMARY = summary[0]['summary_text']
+        EMAIL_ATTACHMENTS = email_message['attachment']
 
         with st.expander(
 
@@ -81,6 +82,13 @@ def render_emails(from_email, from_password, page_size=10):
 
             st.markdown(f"**Summary**:\n {EMAIL_SUMMARY}")
             st.markdown(f"**[Read full e-mail]({redirect_url})**")
+            if len(EMAIL_ATTACHMENTS) != 0:
+                if len(EMAIL_ATTACHMENTS) == 1:
+                    st.markdown(f"**Attachment**:\n {EMAIL_ATTACHMENTS[0]}")
+                else:
+                    for attachment in EMAIL_ATTACHMENTS:
+                        st.markdown(f"**Attachment**:\n {attachment}")
+
 
         # Handle the button click event
         # if redirect_button_clicked:
