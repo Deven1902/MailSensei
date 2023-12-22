@@ -61,9 +61,13 @@ def render_emails(from_email, from_password, page_size=10):
     for email_message in email_messages:
 
         content = email_utils.strip_tags(email_message["content"])
-        summary = LLM.summarize(content, model[0])
-        tags = LLM.get_tags(content, model[2])
-        # spam = LLM.detect_spam(content, model[1])
+
+        if len(content) >= 250:
+            summary = LLM.summarize(content, model[0])
+            tags = LLM.get_tags(content, model[2])
+            # spam = LLM.detect_spam(content, model[1])
+        else:
+            summary = content
 
         # Add a redirect button that links to the original email
         redirect_url = f'https://mail.google.com/mail/u/0/#search/rfc822msgid%3A{email_message["Message ID"]}'
