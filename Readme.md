@@ -5,7 +5,7 @@
 <!-- ![Image](./PeerlistHackathon_CoverImg.png) -->
 
 
-![Cover Image](https://raw.githubusercontent.com/Deven1902/Peerlist-Hackathon/main/PeerlistHackathon_CoverImg.png)
+![Cover Image](https://raw.githubusercontent.com/Deven1902/Peerlist-Hackathon/main/coverImg.png)
 
 Tired of sifting through endless emails, only to discover they're not worth your time? Ever missed important messages due to email overload? In today's digital age, our inboxes are overflowing with both vital and distracting content. You might spend precious time on lengthy, irrelevant emails. MailSensei is here to revolutionize your email experience by addressing these challenges. 🚀
 

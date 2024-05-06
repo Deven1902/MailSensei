@@ -1,9 +1,0 @@
-/myenv
-__pycache__
-cache
-venv
-.env
-.vscode
-llm.log
-.upm
-.pythonlibs
