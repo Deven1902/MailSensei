@@ -51,25 +51,3 @@ def detect_spam(prompt, detector):
 def get_tags(prompt, tagger):
     tags = tagger(prompt[:2048], truncation=True)
     return tags
-
-
-# if __name__ == "__main__":
-#   llm = Summarizer()
-
-#   summary = llm.summarize("""
-# image.png
-
-
-# Job Chahiye!?!?
-
-# GDSC is here with another fantastic event
-# DSA Busted
-# This event will teach you about DATA STRUCTURES AND ALGORITHMS, as well as how to tackle coding rounds.
-# Every Saturday, we will have live doubt sessions.
-# Every Sunday, we will have a quiz.
-# CERTIFICATE and  Exciting GOODIES from GOOGLE.
-
-# So, don't pass up this excellent opportunity to begin or fast track your placement preparations.
-
-# """)
-#   print(summary)
