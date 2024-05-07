@@ -8,12 +8,18 @@ env_path = Path.cwd() / '.env'
 load_dotenv(dotenv_path=env_path)
 
 class APIConfig:
+    """
+    Configuration class for API URLs and headers.
+    """
     SUMMARIZER_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
     DETECTOR_API_URL = "https://api-inference.huggingface.co/models/1aurent/distilbert-base-multilingual-cased-finetuned-email-spam"
     TAGGER_API_URL = "https://api-inference.huggingface.co/models/fabiochiu/t5-base-tag-generation"
     headers = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
 
 def configure_logging():
+    """
+    Configures logging settings.
+    """
     logging.basicConfig(
         level=logging.INFO,
         filename='llm.log',
@@ -21,6 +27,9 @@ def configure_logging():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def initialize_models():
+    """
+    Initializes the models by making API requests to check their status.
+    """
     models = {
         "Summarizer": APIConfig.SUMMARIZER_API_URL,
         "Detector": APIConfig.DETECTOR_API_URL,
@@ -39,6 +48,9 @@ def initialize_models():
                 return None
 
 def make_api_request(url, payload):
+    """
+    Makes an API request to the specified URL with the given payload.
+    """
     try:
         with requests.Session() as session:
             response = session.post(url, headers=APIConfig.headers, json=payload)
@@ -49,14 +61,23 @@ def make_api_request(url, payload):
         return None
 
 def summarize_text(text):
+    """
+    Summarizes the given text using the Summarizer API.
+    """
     payload = {"inputs": text}
     return make_api_request(APIConfig.SUMMARIZER_API_URL, payload)
 
 def detect_spam(text):
+    """
+    Detects spam in the given text using the Detector API.
+    """
     payload = {"inputs": text}
     return make_api_request(APIConfig.DETECTOR_API_URL, payload)
 
 def get_tags(text):
+    """
+    Retrieves tags for the given text using the Tagger API.
+    """
     payload = {"inputs": text}
     return make_api_request(APIConfig.TAGGER_API_URL, payload)
 
@@ -64,6 +85,7 @@ if __name__ == "__main__":
     configure_logging()
     initialize_models()
 
+    # Example text for testing the APIs
     text = """
     Subject: Your Amazon.com order cannot be shipped
     
