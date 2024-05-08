@@ -1,6 +1,0 @@
-transformers
-streamlit
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch
-optimum
-auto-gptq
