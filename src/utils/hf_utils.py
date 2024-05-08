@@ -131,6 +131,7 @@ async def get_tags(text, session):
     }
     return await make_api_request(session, API_URLS["Tagger"], payload)
 
+# Example usage
 if __name__ == "__main__":
     
     async def main():
