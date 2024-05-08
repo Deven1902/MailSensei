@@ -1,104 +1,98 @@
 import os
-import logging
-import requests
+import asyncio
+import aiohttp
 from pathlib import Path
 from dotenv import load_dotenv
 
 env_path = Path.cwd() / '.env'
 load_dotenv(dotenv_path=env_path)
 
-class APIConfig:
-    """
-    Configuration class for API URLs and headers.
-    """
-    SUMMARIZER_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
-    DETECTOR_API_URL = "https://api-inference.huggingface.co/models/1aurent/distilbert-base-multilingual-cased-finetuned-email-spam"
-    TAGGER_API_URL = "https://api-inference.huggingface.co/models/fabiochiu/t5-base-tag-generation"
-    headers = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
+API_URLS = {
+    "Summarizer": "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+    "Detector": "https://api-inference.huggingface.co/models/h-e-l-l-o/email-spam-classification-merged",
+    "Tagger": "https://api-inference.huggingface.co/models/fabiochiu/t5-base-tag-generation"
+}
 
-def configure_logging():
-    """
-    Configures logging settings.
-    """
-    logging.basicConfig(
-        level=logging.INFO,
-        filename='llm.log',
-        filemode='a',
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
 
-def initialize_models():
-    """
-    Initializes the models by making API requests to check their status.
-    """
-    models = {
-        "Summarizer": APIConfig.SUMMARIZER_API_URL,
-        "Detector": APIConfig.DETECTOR_API_URL,
-        "Tagger": APIConfig.TAGGER_API_URL
-    }
-
-    with requests.Session() as session:
-        for model_name, model_url in models.items():
-            try:
-                response = session.get(model_url)
-                response = response.json()
-                print(response)
-                logging.info(f"{model_name} model status: {response['status']}")
-            except requests.RequestException as e:
-                logging.error(f"Error occurred while initializing {model_name.lower()}: {str(e)}")
-                return None
-
-def make_api_request(url, payload):
-    """
-    Makes an API request to the specified URL with the given payload.
-    """
+async def make_api_request(session, url, payload):
     try:
-        with requests.Session() as session:
-            response = session.post(url, headers=APIConfig.headers, json=payload)
-            response = response.json()
+        async with session.post(url, headers=HEADERS, json=payload) as response:
+            response = await response.json()
             return response
-    except requests.RequestException as e:
-        logging.error(f"Error occurred during API request: {str(e)}")
+    except aiohttp.ClientError as e:
+        print(f"Error occurred while making request: {e}")
         return None
 
-def summarize_text(text):
-    """
-    Summarizes the given text using the Summarizer API.
-    """
-    payload = {"inputs": text}
-    return make_api_request(APIConfig.SUMMARIZER_API_URL, payload)
+async def initialize_models(session):
+    tasks = [make_api_request(session, url, {"inputs": "Hello, World!"}) for url in API_URLS.values()]
+    responses = await asyncio.gather(*tasks)
 
-def detect_spam(text):
-    """
-    Detects spam in the given text using the Detector API.
-    """
-    payload = {"inputs": text}
-    return make_api_request(APIConfig.DETECTOR_API_URL, payload)
+    for model_name, response in zip(API_URLS.keys(), responses):
+        if response is None:
+            print(f"Error occurred while initializing {model_name.lower()}")
+        else:
+            print(f"{model_name} initialized successfully")
 
-def get_tags(text):
-    """
-    Retrieves tags for the given text using the Tagger API.
-    """
-    payload = {"inputs": text}
-    return make_api_request(APIConfig.TAGGER_API_URL, payload)
+async def summarize_text(text, session):
+    payload = {
+        "inputs": text,
+        "parameters": {
+            "max_new_tokens": 100,
+            "do_sample": False,
+            "max_length": 100,
+            "min_length": 10
+        }
+    }
+    return await make_api_request(session, API_URLS["Summarizer"], payload)
+
+async def detect_spam(text, session):
+    payload = {
+        "inputs": text,
+        "parameters": {}
+    }
+    return await make_api_request(session, API_URLS["Detector"], payload)
+
+async def get_tags(text, session):
+    payload = {
+        "inputs": text,
+        "parameters": {
+            "max_new_tokens": 100,
+            "do_sample": True,
+            "max_length": 100,
+            "min_length": 10,
+            "num_beams": 8,
+        }
+    }
+    return await make_api_request(session, API_URLS["Tagger"], payload)
 
 if __name__ == "__main__":
-    configure_logging()
-    initialize_models()
+    
+    async def main():
+        async with aiohttp.ClientSession() as session:
+            await initialize_models(session)
 
-    # Example text for testing the APIs
-    text = """
-    Subject: Your Amazon.com order cannot be shipped
-    
-    Dear Customer,
-    Greetings from Amazon.com.
-    We're writing to inform you that your order cannot be shipped.
-    We're sorry for any inconvenience this may cause.
-    We'll refund your order in full.
-    Thank you for shopping with us.
-    
-    Best regards,
-    Amazon.com Customer Service
-    """
-    print(summarize_text(text))
-    print(detect_spam(text))
-    print(get_tags(text))
+            # Example text for testing the APIs
+            text = """
+            Subject: Your Amazon.com order cannot be shipped
+            
+            Dear Customer,
+            Greetings from Amazon.com.
+            We're writing to inform you that your order cannot be shipped.
+            We're sorry for any inconvenience this may cause.
+            We'll refund your order in full.
+            Thank you for shopping with us.
+            
+            Best regards,
+            Amazon.com Customer Service
+            """
+            summary = await summarize_text(text, session)
+            spam = await detect_spam(text, session)
+            tags = await get_tags(text, session)
+
+            print("Summary:", summary)
+            print("Spam Detection:", spam)
+            print("Tags:", tags)
+            
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
