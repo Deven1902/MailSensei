@@ -1,4 +1,5 @@
 import email
+import asyncio
 import logging
 import imaplib
 from html.parser import HTMLParser
@@ -34,16 +35,18 @@ class GmailClient:
         self.password = password
         self.imap_server = None
 
-    def connect(self):
+    async def connect(self):
         """
         Connect to the Gmail IMAP server.
         """
         try:
-            self.imap_server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-            self.imap_server.login(self.username, self.password)
+            self.imap_server = await asyncio.wait_for(
+                asyncio.to_thread(imaplib.IMAP4_SSL, IMAP_SERVER, IMAP_PORT), timeout=10
+            )
+            await asyncio.wait_for(self.imap_server.login(self.username, self.password), timeout=10)
             logger.info("Successfully connected to and logged in to Gmail IMAP server")
             return True
-        except imaplib.IMAP4.error as e:
+        except (imaplib.IMAP4.error, asyncio.TimeoutError) as e:
             logger.error(f"Failed to connect to Gmail IMAP server: {e}")
             return False
 
@@ -55,7 +58,7 @@ class GmailClient:
             self.imap_server.logout()
             logger.info("Disconnected from Gmail IMAP server")
 
-    def fetch_unread_email_ids(self):
+    async def fetch_unread_email_ids(self):
         """
         Fetch IDs of unread emails from the Gmail inbox.
         """
@@ -64,18 +67,21 @@ class GmailClient:
             return []
 
         try:
-            self.imap_server.select('INBOX')
-            _, data = self.imap_server.search(None, 'X-GM-RAW', 'category:primary is:unread')
+            await asyncio.wait_for(self.imap_server.select('INBOX'), timeout=10)
+            _, data = await asyncio.wait_for(
+                self.imap_server.search(None, 'X-GM-RAW', 'category:primary is:unread'),
+                timeout=10
+            )
             if data:
                 return [int(email_id) for email_id in data[0].split()]
             else:
                 logger.info("No unread emails found in the Primary category")
                 return []
-        except imaplib.IMAP4.error as e:
+        except (imaplib.IMAP4.error, asyncio.TimeoutError) as e:
             logger.error(f"Failed to search for unread emails: {e}")
             return []
 
-    def fetch_email(self, email_id):
+    async def fetch_email(self, email_id):
         """
         Fetch details of a specific email.
         """
@@ -84,7 +90,7 @@ class GmailClient:
             return None
 
         try:
-            _, data = self.imap_server.fetch(str(email_id), '(RFC822)')
+            _, data = await asyncio.wait_for(self.imap_server.fetch(str(email_id), '(RFC822)'), timeout=10)
             if data:
                 raw_email = data[0][1]
                 message = email.message_from_bytes(raw_email)
@@ -110,7 +116,7 @@ class GmailClient:
                         }
                         email_info['Attachments'].append(attachment)
                 return email_info
-        except imaplib.IMAP4.error as e:
+        except (imaplib.IMAP4.error, asyncio.TimeoutError) as e:
             logger.error(f"Failed to fetch email {email_id}: {e}")
             return None
 
@@ -147,25 +153,32 @@ def strip_tags(html):
     return stripper.get_data()
 
 if __name__ == "__main__":
-    username = input("Enter your Gmail username: ")
-    password = input("Enter your Gmail password: ")
-
+    
     # Test the GmailClient class
-    gmail_client = GmailClient(username, password)
-    if gmail_client.connect():
-        unread_email_ids = gmail_client.fetch_unread_email_ids()
-        if unread_email_ids:
-            print("Unread email IDs:", unread_email_ids)
-            start_idx = int(input("Enter the start index: "))
-            end_idx = int(input("Enter the end index: "))
-            fetched_emails = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
-            print("Fetched emails:", fetched_emails)
+    async def main():
+        username = input("Enter your Gmail username: ")
+        password = input("Enter your Gmail password: ")
+
+        # Test the GmailClient class
+        gmail_client = GmailClient(username, password)
+        if await gmail_client.connect():
+            unread_email_ids = await gmail_client.fetch_unread_email_ids()
+            if unread_email_ids:
+                print("Unread email IDs:", unread_email_ids)
+                start_idx = int(input("Enter the start index: "))
+                end_idx = int(input("Enter the end index: "))
+                tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
+                fetched_emails = await asyncio.gather(*tasks)
+                print("Fetched emails:", fetched_emails)
+            else:
+                print("No unread emails found")
+            gmail_client.disconnect()
         else:
-            print("No unread emails found")
-        gmail_client.disconnect()
-    else:
-        print("Authentication failed")
-        
+            print("Authentication failed")
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    
     # Test the strip_tags function
-    html_content = "<p>Hello, <b>world</b>!</p>"
-    print("Stripped content:", strip_tags(html_content))
+    html = "<p>This is a <strong>test</strong> HTML string</p>"
+    print(strip_tags(html))
