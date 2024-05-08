@@ -2,6 +2,7 @@ import os
 import random
 import asyncio
 import aiohttp
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -16,6 +17,17 @@ API_URLS = {
     "Tagger": "https://api-inference.huggingface.co/models/fabiochiu/t5-base-tag-generation"
 }
 HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
+
+# Logger configuration
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler("./logs/hf_utils.log"),
+        logging.StreamHandler()
+    ],
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 async def make_api_request(session, url, payload):
     """
@@ -34,7 +46,7 @@ async def make_api_request(session, url, payload):
             response = await response.json()
             return response
     except aiohttp.ClientError as e:
-        print(f"Error occurred while making request: {e}")
+        logger.error(f"Error occurred while making request: {e}")
         return None
 
 async def initialize_models(session):
@@ -58,13 +70,13 @@ async def initialize_models(session):
             response = await make_api_request(session, model_url, {"inputs": "Hello, World!"})
             if isinstance(response, dict) and 'error' in response and 'estimated_time' in response:
                 estimated_time = response['estimated_time']
-                print(f"Model {model_name} is currently loading. Waiting for {estimated_time} seconds...")
+                logger.info(f"Model {model_name} is currently loading. Waiting for {estimated_time} seconds...")
                 await asyncio.sleep(estimated_time + random.uniform(0, 1) * 0.1)  # Add small jitter
                 retries += 1
             else:
-                print(f"{model_name} initialized successfully")
+                logger.info(f"{model_name} initialized successfully")
                 return
-        print(f"Failed to initialize {model_name} after {max_retries} retries")
+        logger.error(f"Failed to initialize {model_name} after {max_retries} retries")
     
     tasks = [initialize_model(model_name, model_url) for model_name, model_url in API_URLS.items()]
     await asyncio.gather(*tasks)
