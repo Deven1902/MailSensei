@@ -176,8 +176,7 @@ if __name__ == "__main__":
         else:
             print("Authentication failed")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
     
     # Test the strip_tags function
     html = "<p>This is a <strong>test</strong> HTML string</p>"
