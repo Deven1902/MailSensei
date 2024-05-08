@@ -20,147 +20,103 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class GmailUtils:
-    @staticmethod
-    def authenticate(username, password):
+class GmailClient:
+    """
+    Class to interact with Gmail IMAP server for fetching emails.
+    """
+
+    def __init__(self, username, password):
         """
-        Authenticate with a Gmail account using IMAP.
+        Initialize GmailClient with username and password.
+        """
+        self.username = username
+        self.password = password
+        self.imap_server = None
 
-        Args:
-            username (str): The Gmail username.
-            password (str): The Gmail password.
-
-        Returns:
-            bool: True if authentication is successful, False otherwise.
+    def connect(self):
+        """
+        Connect to the Gmail IMAP server.
         """
         try:
-            imap_server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-            logger.info("Successfully connected to Gmail IMAP server")
-        except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to establish connection to Gmail IMAP server: {e}")
-            return False
-
-        try:
-            imap_server.login(username, password)
-            logger.info("Successfully logged in to Gmail IMAP server")
-            imap_server.logout()
+            self.imap_server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+            self.imap_server.login(self.username, self.password)
+            logger.info("Successfully connected to and logged in to Gmail IMAP server")
             return True
         except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to log in to Gmail IMAP server: {e}")
+            logger.error(f"Failed to connect to Gmail IMAP server: {e}")
             return False
 
-    @staticmethod
-    def fetch_unread_emails(username, password):
+    def disconnect(self):
         """
-        Fetch unread emails from the primary category of the Gmail inbox.
-
-        Args:
-            username (str): The Gmail username.
-            password (str): The Gmail password.
-
-        Returns:
-            list: A list of email IDs representing unread emails.
+        Disconnect from the Gmail IMAP server.
         """
-        unread_emails = []
-        try:
-            imap_server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-            logger.info("Successfully connected to Gmail IMAP server")
-        except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to establish connection to Gmail IMAP server: {e}")
-            return unread_emails
+        if self.imap_server:
+            self.imap_server.logout()
+            logger.info("Disconnected from Gmail IMAP server")
+
+    def fetch_unread_email_ids(self):
+        """
+        Fetch IDs of unread emails from the Gmail inbox.
+        """
+        if not self.imap_server:
+            logger.error("IMAP server not connected")
+            return []
 
         try:
-            imap_server.login(username, password)
-            logger.info("Successfully logged in to Gmail IMAP server")
-        except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to log in to Gmail IMAP server: {e}")
-            return unread_emails
-
-        try:
-            imap_server.select('INBOX')
-            _, data = imap_server.search(None, 'X-GM-RAW', 'category:primary is:unread')
+            self.imap_server.select('INBOX')
+            _, data = self.imap_server.search(None, 'X-GM-RAW', 'category:primary is:unread')
             if data:
-                email_ids = data[0].split()
-                unread_emails = [int(email_id) for email_id in email_ids]
-                logger.info(f"Found {len(unread_emails)} unread emails in the Primary category")
+                return [int(email_id) for email_id in data[0].split()]
             else:
                 logger.info("No unread emails found in the Primary category")
+                return []
         except imaplib.IMAP4.error as e:
             logger.error(f"Failed to search for unread emails: {e}")
+            return []
 
-        imap_server.logout()
-        return unread_emails
-
-    @staticmethod
-    def fetch_emails(email_ids, start_idx, end_idx, username, password):
+    def fetch_email(self, email_id):
         """
-        Fetch emails from the Gmail inbox based on the provided email IDs and range.
-
-        Args:
-            email_ids (list): List of email IDs to fetch.
-            start_idx (int): Start index of the range to fetch.
-            end_idx (int): End index of the range to fetch.
-            username (str): The Gmail username.
-            password (str): The Gmail password.
-
-        Returns:
-            list: A list of dictionaries representing the fetched emails.
+        Fetch details of a specific email.
         """
-        fetched_emails = []
-        try:
-            imap_server = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
-        except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to establish connection to Gmail IMAP server: {e}")
-            return fetched_emails
+        if not self.imap_server:
+            logger.error("IMAP server not connected")
+            return None
 
         try:
-            imap_server.login(username, password)
-            logger.info("Successfully logged in to Gmail IMAP server")
+            _, data = self.imap_server.fetch(str(email_id), '(RFC822)')
+            if data:
+                raw_email = data[0][1]
+                message = email.message_from_bytes(raw_email)
+                email_info = {
+                    'Message-ID': message.get('Message-ID'),
+                    'In-Reply-To': message.get('In-Reply-To'),
+                    'Subject': decode_header(message['Subject'])[0][0],
+                    'Sender': message['From'],
+                    'Date': parsedate_to_datetime(message['Date']),
+                    'Content': '',
+                    'Attachments': []
+                }
+                for part in message.walk():
+                    if part.get_content_type() == 'text/plain':
+                        email_info['Content'] = part.get_payload(decode=True).decode(part.get_content_charset())
+                    elif part.get_content_maintype() == 'multipart':
+                        continue
+                    elif part.get('Content-Disposition') is not None:
+                        attachment = {
+                            'Filename': part.get_filename(),
+                            'Content-Type': part.get_content_type(),
+                            'Content': part.get_payload(decode=True)
+                        }
+                        email_info['Attachments'].append(attachment)
+                return email_info
         except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to log in to Gmail IMAP server: {e}")
-            return fetched_emails
-
-        try:
-            imap_server.select('INBOX')
-            for idx in range(start_idx, min(end_idx, len(email_ids))):
-                email_id = email_ids[idx]
-                _, data = imap_server.fetch(str(email_id), '(RFC822)')
-                if data:
-                    raw_email = data[0][1]
-                    message = email.message_from_bytes(raw_email)
-                    email_info = {
-                        'Message-ID': message.get('Message-ID'),
-                        'In-Reply-To': message.get('In-Reply-To'),
-                        'Subject': decode_header(message['Subject'])[0][0],
-                        'Sender': message['From'],
-                        'Date': parsedate_to_datetime(message['Date']),
-                        'Content': '',
-                        'Attachments': []
-                    }
-                    for part in message.walk():
-                        if part.get_content_type() == 'text/plain':
-                            email_info['Content'] = part.get_payload(decode=True).decode(part.get_content_charset())
-                        elif part.get_content_maintype() == 'multipart':
-                            continue
-                        elif part.get('Content-Disposition') is not None:
-                            attachment = {
-                                'Filename': part.get_filename(),
-                                'Content-Type': part.get_content_type(),
-                                'Content': part.get_payload(decode=True)
-                            }
-                            email_info['Attachments'].append(attachment)
-                    fetched_emails.append(email_info)
-        except imaplib.IMAP4.error as e:
-            logger.error(f"Failed to fetch emails: {e}")
-
-        imap_server.logout()
-        return fetched_emails
+            logger.error(f"Failed to fetch email {email_id}: {e}")
+            return None
 
 class MLStripper(HTMLParser):
     """
-    A subclass of HTMLParser used to strip HTML tags from HTML content.
+    HTML tag stripper.
     """
-
     def __init__(self):
         super().__init__()
         self.reset()
@@ -170,47 +126,44 @@ class MLStripper(HTMLParser):
 
     def handle_data(self, d):
         """
-        Override handle_data method to extract text data from HTML content.
+        Handle HTML data.
         """
         self.fed.append(d)
 
     def get_data(self):
         """
-        Get the stripped text data.
+        Get stripped HTML data.
         """
         return ''.join(self.fed)
 
 def strip_tags(html):
     """
     Strip HTML tags from HTML strings.
-
-    Args:
-        html (str): The HTML string to strip tags from.
-
-    Returns:
-        str: The text content without HTML tags.
     """
     stripper = MLStripper()
     stripper.feed(html)
     return stripper.get_data()
 
-# Example usage
 if __name__ == "__main__":
     username = input("Enter your Gmail username: ")
     password = input("Enter your Gmail password: ")
 
-    if GmailUtils.authenticate(username, password):
-        print("Authentication successful")
-        unread_email_ids = GmailUtils.fetch_unread_emails(username, password)
-        print("Unread email IDs:", unread_email_ids)
-
-        start_idx = int(input("Enter the start index: "))
-        end_idx = int(input("Enter the end index: "))
-        fetched_emails = GmailUtils.fetch_emails(unread_email_ids, start_idx, end_idx, username, password)
-        print("Fetched emails:", fetched_emails)
-
-        html_content = "<p>Hello <strong>world</strong>!</p>"
-        text_content = strip_tags(html_content)
-        print("Stripped text:", text_content)
+    # Test the GmailClient class
+    gmail_client = GmailClient(username, password)
+    if gmail_client.connect():
+        unread_email_ids = gmail_client.fetch_unread_email_ids()
+        if unread_email_ids:
+            print("Unread email IDs:", unread_email_ids)
+            start_idx = int(input("Enter the start index: "))
+            end_idx = int(input("Enter the end index: "))
+            fetched_emails = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
+            print("Fetched emails:", fetched_emails)
+        else:
+            print("No unread emails found")
+        gmail_client.disconnect()
     else:
         print("Authentication failed")
+        
+    # Test the strip_tags function
+    html_content = "<p>Hello, <b>world</b>!</p>"
+    print("Stripped content:", strip_tags(html_content))
