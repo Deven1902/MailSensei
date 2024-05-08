@@ -20,6 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class GmailClient:
     """
     Class to interact with Gmail IMAP server for fetching emails.
@@ -112,6 +113,7 @@ class GmailClient:
         except imaplib.IMAP4.error as e:
             logger.error(f"Failed to fetch email {email_id}: {e}")
             return None
+
 
 class MLStripper(HTMLParser):
     """
