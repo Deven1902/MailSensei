@@ -12,9 +12,9 @@ load_dotenv(dotenv_path=env_path)
 
 # Define API URLs and headers
 API_URLS = {
-    "Summarizer": "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-    "Detector": "https://api-inference.huggingface.co/models/h-e-l-l-o/email-spam-classification-merged",
-    "Tagger": "https://api-inference.huggingface.co/models/fabiochiu/t5-base-tag-generation"
+    "Summarizer": os.getenv("SUMMARIZER_API_URL"),
+    "Detector": os.getenv("SPAM_DETECTOR_API_URL"),
+    "Tagger": os.getenv("TAGGER_API_URL")
 }
 HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
 
