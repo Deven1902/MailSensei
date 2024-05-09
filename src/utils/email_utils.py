@@ -181,3 +181,4 @@ if __name__ == "__main__":
     # Test the strip_tags function
     html = "<p>This is a <strong>test</strong> HTML string</p>"
     print(strip_tags(html))
+    
