@@ -29,32 +29,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def make_api_request(session, url, payload):
+async def make_api_request(url, payload):
     """
     Makes an asynchronous API request using aiohttp.
 
     Args:
-        session (aiohttp.ClientSession): The aiohttp client session.
         url (str): The URL to make the request to.
         payload (dict): The payload to include in the request.
 
     Returns:
         dict: The JSON response from the API, or None if an error occurs.
     """
-    try:
-        async with session.post(url, headers=HEADERS, json=payload) as response:
-            response = await response.json()
-            return response
-    except aiohttp.ClientError as e:
-        logger.error(f"Error occurred while making request: {e}")
-        return None
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(url, headers=HEADERS, json=payload) as response:
+                response = await response.json()
+                return response
+        except aiohttp.ClientError as e:
+            logger.error(f"Error occurred while making request: {e}")
+            return None
 
-async def initialize_models(session):
+async def initialize_models():
     """
     Initializes the models by making asynchronous API requests to check their status.
-    
-    Args:
-        session (aiohttp.ClientSession): The aiohttp client session.
     """
     async def initialize_model(model_name, model_url):
         """
@@ -67,7 +64,7 @@ async def initialize_models(session):
         retries = 0
         max_retries = 5
         while retries < max_retries:
-            response = await make_api_request(session, model_url, {"inputs": "Hello, World!"})
+            response = await make_api_request(model_url, {"inputs": "Hello, World!"})
             if isinstance(response, dict) and 'error' in response and 'estimated_time' in response:
                 estimated_time = response['estimated_time']
                 logger.info(f"Model {model_name} is currently loading. Waiting for {estimated_time} seconds...")
@@ -81,13 +78,12 @@ async def initialize_models(session):
     tasks = [initialize_model(model_name, model_url) for model_name, model_url in API_URLS.items()]
     await asyncio.gather(*tasks)
 
-async def summarize_text(text, session):
+async def summarize_text(text):
     """
     Summarizes the given text using the Summarizer API.
 
     Args:
         text (str): The text to be summarized.
-        session (aiohttp.ClientSession): The aiohttp client session.
 
     Returns:
         dict: The summary response from the API.
@@ -101,15 +97,14 @@ async def summarize_text(text, session):
             "min_length": 10
         }
     }
-    return await make_api_request(session, API_URLS["Summarizer"], payload)
+    return await make_api_request(API_URLS["Summarizer"], payload)
 
-async def detect_spam(text, session):
+async def detect_spam(text):
     """
     Detects spam in the given text using the Detector API.
 
     Args:
         text (str): The text to be analyzed for spam.
-        session (aiohttp.ClientSession): The aiohttp client session.
 
     Returns:
         dict: The spam detection response from the API.
@@ -118,15 +113,14 @@ async def detect_spam(text, session):
         "inputs": text,
         "parameters": {}
     }
-    return await make_api_request(session, API_URLS["Detector"], payload)
+    return await make_api_request(API_URLS["Detector"], payload)
 
-async def get_tags(text, session):
+async def get_tags(text):
     """
     Retrieves tags for the given text using the Tagger API.
 
     Args:
         text (str): The text to be analyzed for tags.
-        session (aiohttp.ClientSession): The aiohttp client session.
 
     Returns:
         dict: The tags response from the API.
@@ -141,36 +135,35 @@ async def get_tags(text, session):
             "num_beams": 8,
         }
     }
-    return await make_api_request(session, API_URLS["Tagger"], payload)
+    return await make_api_request(API_URLS["Tagger"], payload)
 
 # Example usage
 if __name__ == "__main__":
     
     async def main():
-        async with aiohttp.ClientSession() as session:
-            await initialize_models(session)
+        await initialize_models()
 
-            # Example text for testing the APIs
-            text = """
-            Subject: Your Amazon.com order cannot be shipped
-            
-            Dear Customer,
-            Greetings from Amazon.com.
-            We're writing to inform you that your order cannot be shipped.
-            We're sorry for any inconvenience this may cause.
-            We'll refund your order in full.
-            Thank you for shopping with us.
-            
-            Best regards,
-            Amazon.com Customer Service
-            """
-            summary = await summarize_text(text, session)
-            spam = await detect_spam(text, session)
-            tags = await get_tags(text, session)
+        # Example text for testing the APIs
+        text = """
+        Subject: Your Amazon.com order cannot be shipped
+        
+        Dear Customer,
+        Greetings from Amazon.com.
+        We're writing to inform you that your order cannot be shipped.
+        We're sorry for any inconvenience this may cause.
+        We'll refund your order in full.
+        Thank you for shopping with us.
+        
+        Best regards,
+        Amazon.com Customer Service
+        """
+        summary = await summarize_text(text)
+        spam = await detect_spam(text)
+        tags = await get_tags(text)
 
-            print("Summary:", summary)
-            print("Spam Detection:", spam)
-            print("Tags:", tags)
-            
+        print("Summary:", summary)
+        print("Spam Detection:", spam)
+        print("Tags:", tags)
+        
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
