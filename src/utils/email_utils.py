@@ -43,7 +43,7 @@ class GmailClient:
             self.imap_server = await asyncio.wait_for(
                 asyncio.to_thread(imaplib.IMAP4_SSL, IMAP_SERVER, IMAP_PORT), timeout=10
             )
-            await asyncio.wait_for(self.imap_server.login(self.username, self.password), timeout=10)
+            self.imap_server.login(self.username, self.password)
             logger.info("Successfully connected to and logged in to Gmail IMAP server")
             return True
         except (imaplib.IMAP4.error, asyncio.TimeoutError) as e:
@@ -67,11 +67,8 @@ class GmailClient:
             return []
 
         try:
-            await asyncio.wait_for(self.imap_server.select('INBOX'), timeout=10)
-            _, data = await asyncio.wait_for(
-                self.imap_server.search(None, 'X-GM-RAW', 'category:primary is:unread'),
-                timeout=10
-            )
+            self.imap_server.select('INBOX')
+            _, data =self.imap_server.search(None, 'X-GM-RAW', 'Category:Primary', 'UNSEEN')
             if data:
                 return [int(email_id) for email_id in data[0].split()]
             else:
@@ -90,7 +87,7 @@ class GmailClient:
             return None
 
         try:
-            _, data = await asyncio.wait_for(self.imap_server.fetch(str(email_id), '(RFC822)'), timeout=10)
+            _, data = self.imap_server.fetch(str(email_id), '(RFC822)')
             if data:
                 raw_email = data[0][1]
                 message = email.message_from_bytes(raw_email)
@@ -105,7 +102,7 @@ class GmailClient:
                 }
                 for part in message.walk():
                     if part.get_content_type() == 'text/plain':
-                        email_info['Content'] = part.get_payload(decode=True).decode(part.get_content_charset())
+                        email_info['Content'] = part.get_payload(decode=True).decode('utf-8', errors='ignore')
                     elif part.get_content_maintype() == 'multipart':
                         continue
                     elif part.get('Content-Disposition') is not None:
