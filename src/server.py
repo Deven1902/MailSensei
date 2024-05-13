@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
-from src.utils.email_utils import GmailClient, strip_tags
+from utils.email_utils import GmailClient, strip_tags
 from fastapi.middleware.cors import CORSMiddleware
-from src.utils.hf_utils import (
+from utils.hf_utils import (
     summarize_text,
     get_tags,
     detect_spam,
