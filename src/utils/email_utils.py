@@ -100,18 +100,21 @@ class GmailClient:
                     'Content': '',
                     'Attachments': []
                 }
-                for part in message.walk():
-                    if part.get_content_type() == 'text/plain':
-                        email_info['Content'] = part.get_payload(decode=True).decode('utf-8', errors='ignore')
-                    elif part.get_content_maintype() == 'multipart':
-                        continue
-                    elif part.get('Content-Disposition') is not None:
-                        attachment = {
-                            'Filename': part.get_filename(),
-                            'Content-Type': part.get_content_type(),
-                            'Content': part.get_payload(decode=True)
-                        }
-                        email_info['Attachments'].append(attachment)
+                if message.is_multipart():
+                    for part in message.walk():
+                        if part.get_content_type() == 'text/plain':
+                            email_info['Content'] = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                        elif part.get_content_maintype() == 'multipart':
+                            continue
+                        elif part.get('Content-Disposition') is not None:
+                            attachment = {
+                                'Filename': part.get_filename(),
+                                'Content-Type': part.get_content_type(),
+                                'Content': part.get_payload(decode=True)
+                            }
+                            email_info['Attachments'].append(attachment)
+                else:
+                    email_info['Content'] = message.get_payload(decode=True).decode('utf-8', errors='ignore')
                 return email_info
         except (imaplib.IMAP4.error, asyncio.TimeoutError) as e:
             logger.error(f"Failed to fetch email {email_id}: {e}")
