@@ -24,17 +24,69 @@ def configure_page():
         
     html_template = html_template.replace("{{ base64_image }}", base64_logo)
     st.markdown(html_template, unsafe_allow_html=True)
-   
-    
-async def main():
+
+async def connect_gmail_client(email, password):
+    gmail_client = GmailClient(email, password)
+    if await gmail_client.connect():
+        return gmail_client
+    else:
+        return None
+
+def login_form():
+    st.header("User Login")
+    st.write("Please enter your email ID and password to initialize the models.")
+    email = st.text_input("Email ID", key="email", value=st.session_state.get("email", ""))
+    password = st.text_input("Password", type="password", key="password", value=st.session_state.get("password", ""))
+    return email, password
+
+async def initialize_app():
     configure_page()
+
+    if 'models_initialized' not in st.session_state:
+        st.session_state.models_initialized = False
+
+    if 'show_form' not in st.session_state:
+        st.session_state.show_form = True
+
+    if 'gmail_client' not in st.session_state:
+        st.session_state.gmail_client = None
+
+    if st.session_state.show_form:
+        email, password = login_form()
+
+        if st.button('Connect'):
+            if email and password:
+                st.session_state.show_form = False
+                # Connect to Gmail
+                with st.spinner('Connecting to Gmail...'):
+                    gmail_client = await connect_gmail_client(email, password)
+                if gmail_client:
+                    st.session_state.gmail_client = gmail_client
+                    st.success("Connected to Gmail successfully")
+                    # Initialize models
+                    with st.spinner('Initializing models...'):
+                        await initialize_models()
+                    st.success("Models initialized successfully")
+                    st.session_state.models_initialized = True
+                else:
+                    st.session_state.show_form = True
+                    st.error("Failed to connect to Gmail. Please check your credentials and try again.")
+            else:
+                st.error("Please enter your email ID and password to proceed.")
+    else:
+        if not st.session_state.models_initialized:
+            # Initialize models
+            with st.spinner('Initializing models...'):
+                await initialize_models()
+            st.success("Models initialized successfully")
+            st.session_state.models_initialized = True
+        else:
+            st.success("Models already initialized")
     
-    # Initialize the models
-    placeholder = st.empty()
-    with st.spinner('Initializing models...'):
-        await initialize_models()
-    placeholder.empty()
-    st.success("Models initialized successfully")
+    return email, password
+
+async def main():
+    email, password = await initialize_app()
 
 if __name__ == "__main__":
     asyncio.run(main())
