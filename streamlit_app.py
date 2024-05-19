@@ -49,7 +49,6 @@ def login_form():
     return email, password
 
 async def initialize_app():
-    configure_page()
 
     if 'models_initialized' not in st.session_state:
         st.session_state.models_initialized = False
@@ -93,8 +92,11 @@ async def initialize_app():
                 await initialize_models()
             st.success("Models initialized successfully")
             st.session_state.models_initialized = True
-        else:
-            st.success("Models already initialized")
+            
+    if st.session_state.gmail_client and st.session_state.models_initialized and not st.session_state.show_form:
+        return True
+    else:
+        return False
             
 async def get_emails():
     gmail_client = st.session_state.gmail_client
@@ -116,25 +118,47 @@ async def get_emails():
         if st.session_state.clicked_connect:
             st.error("Error connecting to Gmail. Please check your credentials and try again.")
         return None
+    
+async def render_email(email):
+    email_content = strip_tags(email['Content'])
+    summary = await summarize_text(email_content)
+    tags = await get_tags(email_content)
+    spam = await detect_spam(email_content)
+    
+    with st.expander("Email Details", expanded=True):
+        st.write(f"From: {email['Sender']}")
+        st.write(f"Subject: {email['Subject']}")
+        st.write(f"Content: {email_content}")
+        st.write(f"Summary: {summary}")
+        st.write(f"Tags: {tags}")
+        st.write(f"Spam: {spam}")
 
 async def main():
     
+    configure_page()
+    content_palceholder = st.empty()
+    
     # Initialize the app
-    await initialize_app()
-    
-    # Get emails
-    fetched_emails = await get_emails()
-    
-    if fetched_emails:
-        for email in fetched_emails:
-            email_content = strip_tags(email['Content'])
-            st.write(f"From: {email['Sender']}")
-            st.write(f"Subject: {email['Subject']}")
-            st.write(f"Content: {email_content}")
-            st.write(f"Summary: {await summarize_text(email_content)}")
-            st.write(f"Tags: {await get_tags(email_content)}")
-            st.write(f"Spam: {await detect_spam(email_content)}")
-            st.write("-----")
+    with content_palceholder.container():
+        placeholder = st.empty()
+        app_initialized = await initialize_app()
+        if not app_initialized:
+            return
+        else:
+            # Get emails
+            fetched_emails = await get_emails()
+            placeholder.empty()
+
+    # Display emails
+    with content_palceholder.container(border=True):
+        if fetched_emails:
+            for i, email in enumerate(fetched_emails):
+                st.write(f"From: {email['Sender']}")
+                st.write(f"Subject: {email['Subject']}")
+                if st.button("View", key=i):
+                    await render_email(email)
+                st.write("-----")
+        
 
 if __name__ == "__main__":
     asyncio.run(main())
