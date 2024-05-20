@@ -5,7 +5,7 @@
 
 <h3 align="center">
 <img src="assets/logo.png" width=15px>
-Mailsensei</h3>
+MailSensei</h3>
 
 <div align="center">
 
