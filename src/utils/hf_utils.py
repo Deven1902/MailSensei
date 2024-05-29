@@ -94,7 +94,8 @@ async def summarize_text(text):
             "max_new_tokens": 100,
             "do_sample": False,
             "max_length": 100,
-            "min_length": 10
+            "min_length": 10,
+            "truncation": True,
         }
     }
     return await make_api_request(API_URLS["Summarizer"], payload)
@@ -111,7 +112,9 @@ async def detect_spam(text):
     """
     payload = {
         "inputs": text,
-        "parameters": {}
+        "parameters": {
+            "truncation": True,
+        }
     }
     return await make_api_request(API_URLS["Detector"], payload)
 
@@ -133,6 +136,7 @@ async def get_tags(text):
             "max_length": 100,
             "min_length": 10,
             "num_beams": 8,
+            "truncation": True,
         }
     }
     return await make_api_request(API_URLS["Tagger"], payload)
