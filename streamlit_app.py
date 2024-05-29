@@ -27,40 +27,31 @@ def configure_page():
 
 async def connect_gmail_client(email, password):
     gmail_client = GmailClient(email, password)
-    if await gmail_client.connect():
-        return gmail_client
-    else:
-        return None
+    return gmail_client if await gmail_client.connect() else None
 
 def login_form():
     st.header("User Login")
     st.write("Please enter your email ID and Gmail app password to proceed.")
-    email = st.text_input(
-        "Email ID",
-        key="email",
-        value=st.session_state.get("email", "")
-    )
-    password = st.text_input(
-        "App Password",
-        type="password",
-        key="password",
-        value=st.session_state.get("password", "")
-    )
+    email = st.text_input("Email ID", key="email", value=st.session_state.get("email", ""))
+    password = st.text_input("App Password", type="password", key="password", value=st.session_state.get("password", ""))
     return email, password
 
+async def initialize_models_with_spinner():
+    with st.spinner('Initializing models...'):
+        await initialize_models()
+    st.success("Models initialized successfully")
+    st.session_state.models_initialized = True
+
 async def initialize_app():
-
-    if 'models_initialized' not in st.session_state:
-        st.session_state.models_initialized = False
-
-    if 'show_form' not in st.session_state:
-        st.session_state.show_form = True
-
-    if 'gmail_client' not in st.session_state:
-        st.session_state.gmail_client = None
-        
-    if 'clicked_connect' not in st.session_state:
-        st.session_state.clicked_connect = False
+    state_defaults = {
+        "models_initialized": False,
+        "show_form": True,
+        "gmail_client": None,
+        "clicked_connect": False
+    }
+    for key, value in state_defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
     if st.session_state.show_form:
         email, password = login_form()
@@ -76,10 +67,7 @@ async def initialize_app():
                     st.session_state.gmail_client = gmail_client
                     st.success("Connected to Gmail successfully")
                     # Initialize models
-                    with st.spinner('Initializing models...'):
-                        await initialize_models()
-                    st.success("Models initialized successfully")
-                    st.session_state.models_initialized = True
+                    await initialize_models_with_spinner()
                 else:
                     st.session_state.show_form = True
                     st.error("Failed to connect to Gmail. Please check your credentials and try again.")
@@ -87,27 +75,17 @@ async def initialize_app():
                 st.error("Please enter your email ID and password to proceed.")
     else:
         if not st.session_state.models_initialized:
-            # Initialize models
-            with st.spinner('Initializing models...'):
-                await initialize_models()
-            st.success("Models initialized successfully")
-            st.session_state.models_initialized = True
-            
-    if st.session_state.gmail_client and st.session_state.models_initialized and not st.session_state.show_form:
-        return True
-    else:
-        return False
+            await initialize_models_with_spinner()
+
+    return st.session_state.gmail_client and st.session_state.models_initialized and not st.session_state.show_form
             
 async def get_emails():
     gmail_client = st.session_state.gmail_client
-    start_idx = 0
-    end_idx = 10
     if gmail_client:
-        # Fetch emails
         with st.spinner('Fetching emails...'):
             unread_email_ids = await gmail_client.fetch_unread_email_ids()
             if unread_email_ids:
-                tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
+                tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[:10]]
                 fetched_emails = await asyncio.gather(*tasks)
                 st.success("Fetched emails successfully")
                 return fetched_emails
@@ -121,9 +99,11 @@ async def get_emails():
     
 async def render_email(email):
     email_content = strip_tags(email['Content'])
-    summary = await summarize_text(email_content)
-    tags = await get_tags(email_content)
-    spam = await detect_spam(email_content)
+    summary, tags, spam = await asyncio.gather(
+        summarize_text(email_content),
+        get_tags(email_content),
+        detect_spam(email_content)
+    )
     
     with st.expander("Email Details", expanded=True):
         st.write(f"From: {email['Sender']}")
@@ -134,23 +114,21 @@ async def render_email(email):
         st.write(f"Spam: {spam}")
 
 async def main():
-    
     configure_page()
-    content_palceholder = st.empty()
+    content_placeholder = st.empty()
     
     # Initialize the app
-    with content_palceholder.container():
+    with content_placeholder.container():
         placeholder = st.empty()
         app_initialized = await initialize_app()
         if not app_initialized:
             return
         else:
-            # Get emails
             fetched_emails = await get_emails()
             placeholder.empty()
 
     # Display emails
-    with content_palceholder.container(border=True):
+    with content_placeholder.container(border=True):
         if fetched_emails:
             for i, email in enumerate(fetched_emails):
                 st.write(f"From: {email['Sender']}")
