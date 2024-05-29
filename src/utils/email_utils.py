@@ -87,6 +87,7 @@ class GmailClient:
             return None
 
         try:
+            self.imap_server.select('INBOX', readonly=True)
             _, data = self.imap_server.fetch(str(email_id), '(RFC822)')
             if data:
                 raw_email = data[0][1]
