@@ -110,6 +110,21 @@ async def get_emails():
             st.error("Error connecting to Gmail. Please check your credentials and try again.")
         return None
     
+def get_emails_matching_search(query):
+    gmail_client = st.session_state.gmail_client
+    emails = st.session_state.fetched_emails
+    if gmail_client and emails:
+        with st.spinner('Searching emails...'):
+            matching_emails = [email for email in emails if query.lower() in email['Content'].lower() or query.lower() in email['Sender'].lower() or query.lower() in email['Subject'].lower()]
+            if matching_emails:
+                st.success("Found matching emails")
+                return matching_emails
+            else:
+                st.warning("No matching emails found")
+                return None
+    else:
+        return None
+    
 async def render_email(email):
     email_content = strip_tags(email['Content'])
     # summary, tags, spam = await asyncio.gather(
@@ -158,7 +173,19 @@ async def main():
             placeholder.empty()
 
     with content_placeholder.container():
+        
+        # st.subheader("Search Emails")
+        # search_query = st.text_input("Enter query")
+        # if search_query:
+        #     fetched_emails = get_emails_matching_search(search_query)
+        #     if fetched_emails:
+        #         st.session_state.original_emails = st.session_state.fetched_emails
+        #         st.session_state.fetched_emails = fetched_emails
+        # else:
+        #     fetched_emails = st.session_state.fetched_emails
+            
         if fetched_emails:
+            st.subheader("Emails")
             for i, email in enumerate(fetched_emails):
                 st.write(f"From: {email['Sender']}")
                 st.write(f"Subject: {email['Subject']}")
@@ -168,6 +195,10 @@ async def main():
             
             total_pages = (st.session_state.total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
             render_pagination_controls(total_pages)
+        
+        # # Clear search button
+        # if "original_emails" in st.session_state and st.button("Clear Search"):
+        #     st.session_state.fetched_emails = st.session_state.original_emails
 
 if __name__ == "__main__":
     asyncio.run(main())
