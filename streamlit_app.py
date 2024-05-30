@@ -125,6 +125,21 @@ async def render_email(email):
         # st.write(f"Summary: {summary}")
         # st.write(f"Tags: {tags}")
         # st.write(f"Spam: {spam}")
+        
+def render_pagination_controls(total_pages):
+    _, col1, col2, col3, _,= st.columns(5)
+    with col1:
+        if st.session_state.page > 1:
+            if st.button("⬅️", key="prev_page"):
+                st.session_state.page -= 1
+                st.experimental_rerun()
+    with col2:
+        st.write(f"Page {st.session_state.page} of {total_pages}")
+    with col3:
+        if st.session_state.page < total_pages:
+            if st.button("➡️", key="next_page"):
+                st.session_state.page += 1
+                st.experimental_rerun()
 
 async def main():
     configure_page()
@@ -153,21 +168,6 @@ async def main():
             
             total_pages = (st.session_state.total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
             render_pagination_controls(total_pages)
-
-def render_pagination_controls(total_pages):
-    _, col1, col2, col3, _,= st.columns(5)
-    with col1:
-        if st.session_state.page > 1:
-            if st.button("⬅️", key="prev_page"):
-                st.session_state.page -= 1
-                st.experimental_rerun()
-    with col2:
-        st.write(f"Page {st.session_state.page} of {total_pages}")
-    with col3:
-        if st.session_state.page < total_pages:
-            if st.button("➡️", key="next_page"):
-                st.session_state.page += 1
-                st.experimental_rerun()
 
 if __name__ == "__main__":
     asyncio.run(main())
