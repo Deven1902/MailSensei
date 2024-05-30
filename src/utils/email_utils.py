@@ -149,9 +149,12 @@ def strip_tags(html):
     """
     Strip HTML tags from HTML strings.
     """
-    stripper = MLStripper()
-    stripper.feed(html)
-    return stripper.get_data()
+    if html.startswith("<html>"):
+        stripper = MLStripper()
+        stripper.feed(html)
+        return stripper.get_data()
+    else:
+        return html
 
 if __name__ == "__main__":
     
