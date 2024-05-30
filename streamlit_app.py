@@ -53,7 +53,9 @@ async def initialize_app():
         "gmail_client": None,
         "clicked_connect": False,
         "page": 1,
-        "emails_per_page": 10
+        "emails_per_page": 10,
+        "fetched_emails": None,
+        "total_emails": 0
     }
     initialize_session_state(state_defaults)
 
@@ -96,31 +98,33 @@ async def get_emails():
             if unread_email_ids:
                 tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
                 fetched_emails = await asyncio.gather(*tasks)
+                st.session_state.fetched_emails = fetched_emails
+                st.session_state.total_emails = len(unread_email_ids)
                 st.success("Fetched emails successfully")
-                return fetched_emails, len(unread_email_ids)
+                return fetched_emails
             else:
                 st.warning("No unread emails found")
-                return None, 0
+                return None
     else:
         if st.session_state.clicked_connect:
             st.error("Error connecting to Gmail. Please check your credentials and try again.")
-        return None, 0
-
+        return None
+    
 async def render_email(email):
     email_content = strip_tags(email['Content'])
-    summary, tags, spam = await asyncio.gather(
-        summarize_text(email_content),
-        get_tags(email_content),
-        detect_spam(email_content)
-    )
+    # summary, tags, spam = await asyncio.gather(
+    #     summarize_text(email_content),
+    #     get_tags(email_content),
+    #     detect_spam(email_content)
+    # )
     
     with st.expander("Email Details", expanded=True):
         st.write(f"From: {email['Sender']}")
         st.write(f"Subject: {email['Subject']}")
         st.write(f"Content: {email_content}")
-        st.write(f"Summary: {summary}")
-        st.write(f"Tags: {tags}")
-        st.write(f"Spam: {spam}")
+        # st.write(f"Summary: {summary}")
+        # st.write(f"Tags: {tags}")
+        # st.write(f"Spam: {spam}")
 
 async def main():
     configure_page()
@@ -132,7 +136,10 @@ async def main():
         if not app_initialized:
             return
         else:
-            fetched_emails, total_emails = await get_emails()
+            if st.session_state.fetched_emails is None:
+                fetched_emails = await get_emails()
+            else:
+                fetched_emails = st.session_state.fetched_emails
             placeholder.empty()
 
     with content_placeholder.container():
@@ -140,15 +147,15 @@ async def main():
             for i, email in enumerate(fetched_emails):
                 st.write(f"From: {email['Sender']}")
                 st.write(f"Subject: {email['Subject']}")
-                if st.button("View", key=i):
+                if st.button("View", key=f"view_{i}"):
                     await render_email(email)
                 st.write("-----")
             
-            total_pages = (total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
+            total_pages = (st.session_state.total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
             render_pagination_controls(total_pages)
 
 def render_pagination_controls(total_pages):
-    _, col1, col2, col3 , _ = st.columns(5)
+    _, col1, col2, col3, _,= st.columns(5)
     with col1:
         if st.session_state.page > 1:
             if st.button("⬅️", key="prev_page"):
