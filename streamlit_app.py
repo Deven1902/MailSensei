@@ -16,14 +16,13 @@ def configure_page():
         page_icon="./assets/logo.png"
     )
 
-    with open("./assets/logo_base64.txt", "r") as file:
-        base64_logo = file.read()
-
-    with open("./assets/template.html", "r") as file:
-        html_template = file.read()
-        
-    html_template = html_template.replace("{{ base64_image }}", base64_logo)
+    base64_logo = load_file_content("./assets/logo_base64.txt")
+    html_template = load_file_content("./assets/template.html").replace("{{ base64_image }}", base64_logo)
     st.markdown(html_template, unsafe_allow_html=True)
+
+def load_file_content(file_path):
+    with open(file_path, "r") as file:
+        return file.read()
 
 async def connect_gmail_client(email, password):
     gmail_client = GmailClient(email, password)
@@ -42,6 +41,11 @@ async def initialize_models_with_spinner():
     st.success("Models initialized successfully")
     st.session_state.models_initialized = True
 
+def initialize_session_state(defaults):
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
 async def initialize_app():
     state_defaults = {
         "models_initialized": False,
@@ -51,35 +55,33 @@ async def initialize_app():
         "page": 1,
         "emails_per_page": 10
     }
-    for key, value in state_defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+    initialize_session_state(state_defaults)
 
     if st.session_state.show_form:
         email, password = login_form()
-
         if st.button('Connect'):
-            st.session_state.clicked_connect = True
-            if email and password:
-                st.session_state.show_form = False
-                # Connect to Gmail
-                with st.spinner('Connecting to Gmail...'):
-                    gmail_client = await connect_gmail_client(email, password)
-                if gmail_client:
-                    st.session_state.gmail_client = gmail_client
-                    st.success("Connected to Gmail successfully")
-                    # Initialize models
-                    await initialize_models_with_spinner()
-                else:
-                    st.session_state.show_form = True
-                    st.error("Failed to connect to Gmail. Please check your credentials and try again.")
-            else:
-                st.error("Please enter your email ID and password to proceed.")
+            await handle_login(email, password)
     else:
         if not st.session_state.models_initialized:
             await initialize_models_with_spinner()
 
     return st.session_state.gmail_client and st.session_state.models_initialized and not st.session_state.show_form
+
+async def handle_login(email, password):
+    st.session_state.clicked_connect = True
+    if email and password:
+        st.session_state.show_form = False
+        with st.spinner('Connecting to Gmail...'):
+            gmail_client = await connect_gmail_client(email, password)
+        if gmail_client:
+            st.session_state.gmail_client = gmail_client
+            st.success("Connected to Gmail successfully")
+            await initialize_models_with_spinner()
+        else:
+            st.session_state.show_form = True
+            st.error("Failed to connect to Gmail. Please check your credentials and try again.")
+    else:
+        st.error("Please enter your email ID and password to proceed.")
 
 async def get_emails():
     gmail_client = st.session_state.gmail_client
@@ -87,7 +89,7 @@ async def get_emails():
     emails_per_page = st.session_state.emails_per_page
     start_idx = (page - 1) * emails_per_page
     end_idx = start_idx + emails_per_page
-    
+
     if gmail_client:
         with st.spinner('Fetching emails...'):
             unread_email_ids = await gmail_client.fetch_unread_email_ids()
@@ -124,7 +126,6 @@ async def main():
     configure_page()
     content_placeholder = st.empty()
     
-    # Initialize the app
     with content_placeholder.container():
         placeholder = st.empty()
         app_initialized = await initialize_app()
@@ -134,7 +135,6 @@ async def main():
             fetched_emails, total_emails = await get_emails()
             placeholder.empty()
 
-    # Display emails
     with content_placeholder.container():
         if fetched_emails:
             for i, email in enumerate(fetched_emails):
@@ -144,21 +144,23 @@ async def main():
                     await render_email(email)
                 st.write("-----")
             
-            # Pagination controls
             total_pages = (total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.session_state.page > 1:
-                    if st.button("Previous page"):
-                        st.session_state.page -= 1
-                        st.experimental_rerun()
-            with col2:
-                st.write(f"Page {st.session_state.page} of {total_pages}")
-            with col3:
-                if st.session_state.page < total_pages:
-                    if st.button("Next page"):
-                        st.session_state.page += 1
-                        st.experimental_rerun()
+            render_pagination_controls(total_pages)
+
+def render_pagination_controls(total_pages):
+    _, col1, col2, col3 , _ = st.columns(5)
+    with col1:
+        if st.session_state.page > 1:
+            if st.button("⬅️", key="prev_page"):
+                st.session_state.page -= 1
+                st.experimental_rerun()
+    with col2:
+        st.write(f"Page {st.session_state.page} of {total_pages}")
+    with col3:
+        if st.session_state.page < total_pages:
+            if st.button("➡️", key="next_page"):
+                st.session_state.page += 1
+                st.experimental_rerun()
 
 if __name__ == "__main__":
     asyncio.run(main())
