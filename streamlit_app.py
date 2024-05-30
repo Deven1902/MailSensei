@@ -47,7 +47,9 @@ async def initialize_app():
         "models_initialized": False,
         "show_form": True,
         "gmail_client": None,
-        "clicked_connect": False
+        "clicked_connect": False,
+        "page": 1,
+        "emails_per_page": 10
     }
     for key, value in state_defaults.items():
         if key not in st.session_state:
@@ -78,25 +80,30 @@ async def initialize_app():
             await initialize_models_with_spinner()
 
     return st.session_state.gmail_client and st.session_state.models_initialized and not st.session_state.show_form
-            
+
 async def get_emails():
     gmail_client = st.session_state.gmail_client
+    page = st.session_state.page
+    emails_per_page = st.session_state.emails_per_page
+    start_idx = (page - 1) * emails_per_page
+    end_idx = start_idx + emails_per_page
+    
     if gmail_client:
         with st.spinner('Fetching emails...'):
             unread_email_ids = await gmail_client.fetch_unread_email_ids()
             if unread_email_ids:
-                tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[:10]]
+                tasks = [gmail_client.fetch_email(email_id) for email_id in unread_email_ids[start_idx:end_idx]]
                 fetched_emails = await asyncio.gather(*tasks)
                 st.success("Fetched emails successfully")
-                return fetched_emails
+                return fetched_emails, len(unread_email_ids)
             else:
                 st.warning("No unread emails found")
-                return None
+                return None, 0
     else:
         if st.session_state.clicked_connect:
             st.error("Error connecting to Gmail. Please check your credentials and try again.")
-        return None
-    
+        return None, 0
+
 async def render_email(email):
     email_content = strip_tags(email['Content'])
     summary, tags, spam = await asyncio.gather(
@@ -124,11 +131,11 @@ async def main():
         if not app_initialized:
             return
         else:
-            fetched_emails = await get_emails()
+            fetched_emails, total_emails = await get_emails()
             placeholder.empty()
 
     # Display emails
-    with content_placeholder.container(border=True):
+    with content_placeholder.container():
         if fetched_emails:
             for i, email in enumerate(fetched_emails):
                 st.write(f"From: {email['Sender']}")
@@ -136,7 +143,22 @@ async def main():
                 if st.button("View", key=i):
                     await render_email(email)
                 st.write("-----")
-        
+            
+            # Pagination controls
+            total_pages = (total_emails + st.session_state.emails_per_page - 1) // st.session_state.emails_per_page
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.session_state.page > 1:
+                    if st.button("Previous page"):
+                        st.session_state.page -= 1
+                        st.experimental_rerun()
+            with col2:
+                st.write(f"Page {st.session_state.page} of {total_pages}")
+            with col3:
+                if st.session_state.page < total_pages:
+                    if st.button("Next page"):
+                        st.session_state.page += 1
+                        st.experimental_rerun()
 
 if __name__ == "__main__":
     asyncio.run(main())
