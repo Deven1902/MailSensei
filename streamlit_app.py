@@ -127,19 +127,19 @@ def get_emails_matching_search(query):
     
 async def render_email(email):
     email_content = strip_tags(email['Content'])
-    # summary, tags, spam = await asyncio.gather(
-    #     summarize_text(email_content),
-    #     get_tags(email_content),
-    #     detect_spam(email_content)
-    # )
+    summary, tags, spam = await asyncio.gather(
+        summarize_text(email_content),
+        get_tags(email_content),
+        detect_spam(email_content)
+    )
     
     with st.expander("Email Details", expanded=True):
         st.write(f"From: {email['Sender']}")
         st.write(f"Subject: {email['Subject']}")
         st.write(f"Content: {email_content}")
-        # st.write(f"Summary: {summary}")
-        # st.write(f"Tags: {tags}")
-        # st.write(f"Spam: {spam}")
+        st.write(f"Summary: {summary}")
+        st.write(f"Tags: {tags}")
+        st.write(f"Spam: {spam}")
         
 def render_pagination_controls(total_pages):
     _, col1, col2, col3, _,= st.columns(5)
