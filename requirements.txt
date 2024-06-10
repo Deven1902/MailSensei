@@ -1,6 +1,10 @@
-transformers
-streamlit
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch
-optimum
-auto-gptq
+aiohttp==3.8.4
+fastapi==0.111.0
+openai==1.28.1
+protobuf==3.19.6
+pydantic==1.10.11
+python-dotenv==1.0.1
+requests==2.31.0
+setuptools==69.2.0
+streamlit==1.22.0
+uvicorn==0.29.0

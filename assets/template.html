@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Hide Streamlit's default header, footer*/
+        header { visibility: hidden; }
+        .streamlit-footer { display: none; }
+        /* Custom header */
+        .header {
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            background-color: rgb(14, 17, 23);
+            z-index: 999;
+        }
+        .header img {
+            height: 50px;
+            margin-right: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            color: white;
+            font-size: 24px;
+        }
+        body {
+            background-color: rgb(38, 39, 48);
+            color: #ABB2BF;
+        }
+        .stApp {
+            background-color: rgb(38, 39, 48);
+            color: #ABB2BF;
+        }
+        .stAlert {
+            background-color: rgb(38, 39, 48);
+            color: #ABB2BF;
+            border-radius: 5px;
+        }
+        .stTextInput input {
+            background-color: rgb(14, 17, 23);
+            color: #ABB2BF;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ base64_image }}" alt="Logo">
+        <h1>MAILSENSEI</h1>
+    </div>
+</body>
+</html>
